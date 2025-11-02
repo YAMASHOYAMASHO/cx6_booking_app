@@ -11,12 +11,16 @@ class ReservationFormPage extends ConsumerStatefulWidget {
   final Equipment equipment;
   final DateTime selectedDate;
   final Reservation? reservation; // 編集時は既存の予約を渡す
+  final DateTime? initialStartTime; // 初期開始時刻（タイムラインからのドラッグ用）
+  final DateTime? initialEndTime; // 初期終了時刻（タイムラインからのドラッグ用）
 
   const ReservationFormPage({
     super.key,
     required this.equipment,
     required this.selectedDate,
     this.reservation,
+    this.initialStartTime,
+    this.initialEndTime,
   });
 
   @override
@@ -37,6 +41,11 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
       _startTime = widget.reservation!.startTime;
       _endTime = widget.reservation!.endTime;
       _noteController.text = widget.reservation!.note ?? '';
+    } else if (widget.initialStartTime != null &&
+        widget.initialEndTime != null) {
+      // タイムラインからのドラッグで指定された時刻を使用
+      _startTime = widget.initialStartTime!;
+      _endTime = widget.initialEndTime!;
     } else {
       _startTime = DateTime(
         widget.selectedDate.year,
@@ -164,7 +173,7 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
         const Text(' : '),
         DropdownButton<int>(
           value: time.minute,
-          items: [0, 15, 30, 45].map((minute) {
+          items: List.generate(12, (i) => i * 5).map((minute) {
             return DropdownMenuItem(
               value: minute,
               child: Text(minute.toString().padLeft(2, '0')),

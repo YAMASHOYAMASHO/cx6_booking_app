@@ -10,6 +10,7 @@ import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import 'admin/admin_menu_page.dart';
+import 'reservation_form_page.dart';
 
 /// エラー表示ウィジェット
 class _ErrorDisplay extends StatelessWidget {
@@ -360,7 +361,7 @@ class _TimelineView extends ConsumerWidget {
 }
 
 /// 横方向タイムライングリッド
-class _HorizontalTimelineGrid extends ConsumerWidget {
+class _HorizontalTimelineGrid extends ConsumerStatefulWidget {
   final List<Equipment> equipments;
   final List<Reservation> reservations;
   final DateTime selectedDate;
@@ -372,7 +373,18 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HorizontalTimelineGrid> createState() =>
+      _HorizontalTimelineGridState();
+}
+
+class _HorizontalTimelineGridState
+    extends ConsumerState<_HorizontalTimelineGrid> {
+  Equipment? _dragTargetEquipment;
+  double? _dragStartX;
+  double? _dragCurrentX;
+
+  @override
+  Widget build(BuildContext context) {
     const double hourWidth = 40.0; // 1時間あたり40px
     const double equipmentRowHeight = 60.0;
     const double timeHeaderHeight = 40.0;
@@ -390,15 +402,14 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
               // 装置ごとの行
               Expanded(
                 child: ListView.builder(
-                  itemCount: equipments.length,
+                  itemCount: widget.equipments.length,
                   itemBuilder: (context, index) {
-                    final equipment = equipments[index];
-                    final equipmentReservations = reservations
+                    final equipment = widget.equipments[index];
+                    final equipmentReservations = widget.reservations
                         .where((r) => r.equipmentId == equipment.id)
                         .toList();
                     return _buildEquipmentRow(
                       context,
-                      ref,
                       equipment,
                       equipmentReservations,
                       hourWidth,
@@ -475,12 +486,14 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
   /// 装置の行を構築
   Widget _buildEquipmentRow(
     BuildContext context,
-    WidgetRef ref,
     Equipment equipment,
     List<Reservation> equipmentReservations,
     double hourWidth,
     double rowHeight,
   ) {
+    final isDragging =
+        _dragTargetEquipment?.id == equipment.id && _dragStartX != null;
+
     return SizedBox(
       height: rowHeight,
       child: Row(
@@ -517,38 +530,66 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
               ],
             ),
           ),
-          // タイムライングリッド
+          // タイムライングリッド（ドラッグ可能）
           Expanded(
-            child: Stack(
-              children: [
-                // グリッド背景
-                Row(
-                  children: List.generate(24, (hour) {
-                    return Container(
-                      width: hourWidth,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          left: BorderSide(
-                            color: Colors.grey[300]!,
-                            width: hour % 6 == 0 ? 1.5 : 0.5,
+            child: GestureDetector(
+              onHorizontalDragStart: (details) {
+                setState(() {
+                  _dragTargetEquipment = equipment;
+                  _dragStartX = details.localPosition.dx;
+                  _dragCurrentX = details.localPosition.dx;
+                });
+              },
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _dragCurrentX = details.localPosition.dx;
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                if (_dragStartX != null && _dragCurrentX != null) {
+                  _handleDragEnd(context, equipment, hourWidth);
+                }
+                setState(() {
+                  _dragTargetEquipment = null;
+                  _dragStartX = null;
+                  _dragCurrentX = null;
+                });
+              },
+              child: Stack(
+                children: [
+                  // グリッド背景
+                  Row(
+                    children: List.generate(24, (hour) {
+                      return Container(
+                        width: hourWidth,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: Colors.grey[300]!,
+                              width: hour % 6 == 0 ? 1.5 : 0.5,
+                            ),
+                            bottom: BorderSide(color: Colors.grey[200]!),
                           ),
-                          bottom: BorderSide(color: Colors.grey[200]!),
                         ),
-                      ),
+                      );
+                    }),
+                  ),
+                  // 予約バー
+                  ...equipmentReservations.map((reservation) {
+                    return _buildReservationBar(
+                      context,
+                      reservation,
+                      hourWidth,
+                      rowHeight,
                     );
                   }),
-                ),
-                // 予約バー
-                ...equipmentReservations.map((reservation) {
-                  return _buildReservationBar(
-                    context,
-                    ref,
-                    reservation,
-                    hourWidth,
-                    rowHeight,
-                  );
-                }),
-              ],
+                  // ドラッグ中のプレビュー
+                  if (isDragging &&
+                      _dragStartX != null &&
+                      _dragCurrentX != null)
+                    _buildDragPreview(hourWidth, rowHeight),
+                ],
+              ),
             ),
           ),
         ],
@@ -556,10 +597,103 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
     );
   }
 
+  /// ドラッグプレビューを構築
+  Widget _buildDragPreview(double hourWidth, double rowHeight) {
+    final startX = _dragStartX!;
+    final currentX = _dragCurrentX!;
+    final left = startX < currentX ? startX : currentX;
+    final width = (startX - currentX).abs();
+
+    return Positioned(
+      left: left,
+      top: 4,
+      width: width,
+      height: rowHeight - 8,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.3),
+          border: Border.all(color: Colors.blue, width: 2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Center(child: Icon(Icons.add, color: Colors.blue)),
+      ),
+    );
+  }
+
+  /// ドラッグ終了時の処理
+  void _handleDragEnd(
+    BuildContext context,
+    Equipment equipment,
+    double hourWidth,
+  ) {
+    if (_dragStartX == null || _dragCurrentX == null) return;
+
+    final startX = _dragStartX! < _dragCurrentX!
+        ? _dragStartX!
+        : _dragCurrentX!;
+    final endX = _dragStartX! < _dragCurrentX! ? _dragCurrentX! : _dragStartX!;
+
+    // 最小ドラッグ幅（0.5時間 = 30分）
+    if (endX - startX < hourWidth * 0.5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('予約時間は最低30分必要です'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 時刻を計算（30分単位に丸める）
+    final startHour = (startX / hourWidth * 2).round() / 2.0;
+    final endHour = (endX / hourWidth * 2).round() / 2.0;
+
+    // 時刻をDateTime型に変換（15分単位に調整）
+    final startTotalMinutes = (startHour * 60).round();
+    final endTotalMinutes = (endHour * 60).round();
+
+    // 15分単位に丸める（0, 15, 30, 45のいずれか）
+    final roundedStartMinutes = ((startTotalMinutes / 15).round() * 15);
+    final roundedEndMinutes = ((endTotalMinutes / 15).round() * 15);
+
+    // 時と分に分解
+    final startHourInt = roundedStartMinutes ~/ 60;
+    final startMinuteInt = roundedStartMinutes % 60;
+    final endHourInt = roundedEndMinutes ~/ 60;
+    final endMinuteInt = roundedEndMinutes % 60;
+
+    // DateTimeを構築
+    final startTime = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+      startHourInt,
+      startMinuteInt,
+    );
+    final endTime = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+      endHourInt,
+      endMinuteInt,
+    );
+
+    // 予約フォーム画面へ遷移
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReservationFormPage(
+          equipment: equipment,
+          selectedDate: widget.selectedDate,
+          initialStartTime: startTime,
+          initialEndTime: endTime,
+        ),
+      ),
+    );
+  }
+
   /// 予約バーを構築
   Widget _buildReservationBar(
     BuildContext context,
-    WidgetRef ref,
     Reservation reservation,
     double hourWidth,
     double rowHeight,
@@ -580,7 +714,7 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
       height: rowHeight - 8,
       child: GestureDetector(
         onTap: () {
-          _showReservationDialog(context, ref, reservation);
+          _showReservationDialog(context, reservation);
         },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 1),
@@ -618,11 +752,7 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
     );
   }
 
-  void _showReservationDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Reservation reservation,
-  ) {
+  void _showReservationDialog(BuildContext context, Reservation reservation) {
     final currentUser = ref.read(currentUserProvider).value;
     final canDelete =
         currentUser?.id == reservation.userId ||
