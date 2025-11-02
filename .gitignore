@@ -21,7 +21,13 @@ migrate_working_dir/
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+# プロジェクト共有の推奨設定は残し、個人設定のみ除外
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -33,6 +39,19 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Firebase - 機密情報の除外（プロジェクトによる）
+# 注意: firebase_config.dartは公開APIキーのみなので通常はコミットOK
+# しかし、サービスアカウントキーなどは絶対に除外すること
+**/google-services.json.secret
+**/GoogleService-Info.plist.secret
+**/*-firebase-adminsdk-*.json
+.firebase/
+firebase-debug.log
+firestore-debug.log
+firestore.indexes.json
+firestore.rules
+storage.rules
+
 # Symbolication related
 app.*.symbols
 
@@ -43,3 +62,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# 環境変数・機密情報
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
