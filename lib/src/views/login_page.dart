@@ -16,6 +16,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   bool _isSignUp = false;
+  bool _obscurePassword = true; // パスワード表示/非表示の状態
 
   @override
   void dispose() {
@@ -56,6 +57,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.person),
                     ),
+                    autofillHints: const [AutofillHints.name],
+                    onFieldSubmitted: (_) => _submit(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return '名前を入力してください';
@@ -74,6 +77,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [
+                    AutofillHints.email,
+                    AutofillHints.username,
+                  ],
+                  onFieldSubmitted: (_) => _submit(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'メールアドレスを入力してください';
@@ -88,12 +96,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 // パスワード
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'パスワード',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                      tooltip: _obscurePassword ? 'パスワードを表示' : 'パスワードを隠す',
+                    ),
                   ),
-                  obscureText: true,
+                  obscureText: _obscurePassword,
+                  autofillHints: const [AutofillHints.password],
+                  onFieldSubmitted: (_) => _submit(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'パスワードを入力してください';
@@ -129,7 +152,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 // エラーメッセージ
                 if (authState.hasError)
-                  _ErrorDisplay(error: authState.error.toString()),
+                  _ErrorDisplay(
+                    error: _getErrorMessage(authState.error.toString()),
+                  ),
               ],
             ),
           ),
@@ -143,22 +168,46 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    if (_isSignUp) {
-      await ref
-          .read(authViewModelProvider.notifier)
-          .signUpWithEmail(
-            _emailController.text.trim(),
-            _passwordController.text,
-            _nameController.text.trim(),
-          );
-    } else {
-      await ref
-          .read(authViewModelProvider.notifier)
-          .signInWithEmail(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+    try {
+      if (_isSignUp) {
+        await ref
+            .read(authViewModelProvider.notifier)
+            .signUpWithEmail(
+              _emailController.text.trim(),
+              _passwordController.text,
+              _nameController.text.trim(),
+            );
+      } else {
+        await ref
+            .read(authViewModelProvider.notifier)
+            .signInWithEmail(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+      }
+    } catch (e) {
+      // エラーは authViewModelProvider の状態で処理される
     }
+  }
+
+  /// エラーメッセージを分かりやすく変換
+  String _getErrorMessage(String error) {
+    // Firebase認証エラーを分かりやすいメッセージに変換
+    if (error.contains('invalid-email') ||
+        error.contains('user-not-found') ||
+        error.contains('wrong-password') ||
+        error.contains('invalid-credential')) {
+      return 'メールアドレスまたはパスワードが間違っています';
+    } else if (error.contains('email-already-in-use')) {
+      return 'このメールアドレスは既に使用されています';
+    } else if (error.contains('weak-password')) {
+      return 'パスワードが弱すぎます。6文字以上で設定してください';
+    } else if (error.contains('network-request-failed')) {
+      return 'ネットワークエラーが発生しました。接続を確認してください';
+    } else if (error.contains('too-many-requests')) {
+      return 'ログイン試行回数が多すぎます。しばらく待ってから再度お試しください';
+    }
+    return 'ログインに失敗しました。入力内容をご確認ください';
   }
 }
 
@@ -183,13 +232,7 @@ class _ErrorDisplay extends StatelessWidget {
           Icon(Icons.error, color: Colors.red),
           const SizedBox(width: 8),
           Expanded(
-            child: SelectableText(
-              'エラー: $error',
-              style: TextStyle(
-                color: Colors.red.shade900,
-                fontFamily: 'monospace',
-              ),
-            ),
+            child: Text(error, style: TextStyle(color: Colors.red.shade900)),
           ),
         ],
       ),
