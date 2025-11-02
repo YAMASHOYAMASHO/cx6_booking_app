@@ -76,4 +76,28 @@ class UserRepository {
               .toList();
         });
   }
+
+  /// 複数のユーザー情報を一度に取得（効率化用）
+  Future<Map<String, User>> getUsersByIds(List<String> userIds) async {
+    if (userIds.isEmpty) return {};
+
+    final users = <String, User>{};
+
+    // Firestoreの制限により、10件ずつに分割して取得
+    for (var i = 0; i < userIds.length; i += 10) {
+      final batch = userIds.skip(i).take(10).toList();
+      final snapshot = await _firestore
+          .collection(_collectionName)
+          .where(FieldPath.documentId, whereIn: batch)
+          .get();
+
+      for (var doc in snapshot.docs) {
+        if (doc.exists) {
+          users[doc.id] = User.fromFirestore(doc.data(), doc.id);
+        }
+      }
+    }
+
+    return users;
+  }
 }

@@ -5,6 +5,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../models/equipment.dart';
 import '../../models/location.dart';
 import '../../models/reservation.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/equipment_viewmodel.dart';
 import '../../viewmodels/location_viewmodel.dart';
 import '../../viewmodels/reservation_viewmodel.dart';
@@ -384,50 +385,88 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
         reservation.endTime.hour + reservation.endTime.minute / 60.0;
     final duration = endHour - startHour;
 
-    return Positioned(
-      left: startHour * hourWidth,
-      top: 8,
-      width: duration * hourWidth - 4,
-      height: rowHeight - 16,
-      child: InkWell(
-        onTap: () => _showReservationMenu(context, ref, reservation),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade300,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: Colors.blue.shade700),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                reservation.userName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: Colors.white,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                '${DateFormat('HH:mm').format(reservation.startTime)} - ${DateFormat('HH:mm').format(reservation.endTime)}',
-                style: const TextStyle(fontSize: 10, color: Colors.white),
-              ),
-              if (reservation.note != null && reservation.note!.isNotEmpty)
-                Expanded(
-                  child: Text(
-                    reservation.note!,
-                    style: const TextStyle(fontSize: 10, color: Colors.white70),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+    return Consumer(
+      builder: (context, ref, _) {
+        final userAsync = ref.watch(userByIdProvider(reservation.userId));
+
+        return userAsync.when(
+          data: (user) {
+            // ユーザーのマイカラーを取得
+            Color reservationColor = Colors.blue.shade300;
+            Color borderColor = Colors.blue.shade700;
+
+            if (user?.myColor != null && user!.myColor!.isNotEmpty) {
+              try {
+                final hex = user.myColor!.replaceAll('#', '');
+                final baseColor = Color(int.parse('FF$hex', radix: 16));
+                reservationColor = baseColor.withOpacity(0.7);
+                borderColor = baseColor.withOpacity(0.9);
+              } catch (e) {
+                // カラーコードのパースに失敗した場合はデフォルト色
+                reservationColor = Colors.blue.shade300;
+                borderColor = Colors.blue.shade700;
+              }
+            }
+
+            final userName = user?.name ?? '不明なユーザー';
+
+            return Positioned(
+              left: startHour * hourWidth,
+              top: 8,
+              width: duration * hourWidth - 4,
+              height: rowHeight - 16,
+              child: InkWell(
+                onTap: () => _showReservationMenu(context, ref, reservation),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: reservationColor,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: borderColor, width: 2),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '${DateFormat('HH:mm').format(reservation.startTime)} - ${DateFormat('HH:mm').format(reservation.endTime)}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (reservation.note != null &&
+                          reservation.note!.isNotEmpty)
+                        Expanded(
+                          child: Text(
+                            reservation.note!,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white70,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
+              ),
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (error, stack) => const SizedBox.shrink(),
+        );
+      },
     );
   }
 
@@ -438,101 +477,121 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
   ) {
     showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('予約詳細', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              _buildDetailRow('装置', reservation.equipmentName),
-              _buildDetailRow('予約者', reservation.userName),
-              _buildDetailRow(
-                '時間',
-                '${DateFormat('yyyy/MM/dd HH:mm').format(reservation.startTime)} - ${DateFormat('HH:mm').format(reservation.endTime)}',
-              ),
-              if (reservation.note != null && reservation.note!.isNotEmpty)
-                _buildDetailRow('メモ', reservation.note!),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      // 装置情報を取得
-                      final equipments = await ref.read(
-                        equipmentsByLocationProvider(selectedLocationId).future,
-                      );
-                      final equipment = equipments.firstWhere(
-                        (e) => e.id == reservation.equipmentId,
-                      );
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final userAsync = ref.watch(userByIdProvider(reservation.userId));
 
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => ReservationFormPage(
-                              equipment: equipment,
-                              selectedDate: selectedDate,
-                              reservation: reservation,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text('編集'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('予約を削除'),
-                          content: const Text('この予約を削除しますか？'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('キャンセル'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text(
-                                '削除',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+          return userAsync.when(
+            data: (user) {
+              final userName = user?.name ?? '不明なユーザー';
 
-                      if (confirmed == true) {
-                        await ref
-                            .read(reservationViewModelProvider.notifier)
-                            .deleteReservation(reservation.id);
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('予約を削除しました')),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.delete),
-                    label: const Text('削除'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+              return Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('予約詳細', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    _buildDetailRow('装置', reservation.equipmentName),
+                    _buildDetailRow('予約者', userName),
+                    _buildDetailRow(
+                      '時間',
+                      '${DateFormat('yyyy/MM/dd HH:mm').format(reservation.startTime)} - ${DateFormat('HH:mm').format(reservation.endTime)}',
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                    if (reservation.note != null &&
+                        reservation.note!.isNotEmpty)
+                      _buildDetailRow('メモ', reservation.note!),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            // 装置情報を取得
+                            final equipments = await ref.read(
+                              equipmentsByLocationProvider(
+                                selectedLocationId,
+                              ).future,
+                            );
+                            final equipment = equipments.firstWhere(
+                              (e) => e.id == reservation.equipmentId,
+                            );
+
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => ReservationFormPage(
+                                    equipment: equipment,
+                                    selectedDate: selectedDate,
+                                    reservation: reservation,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.edit),
+                          label: const Text('編集'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('予約を削除'),
+                                content: const Text('この予約を削除しますか？'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('キャンセル'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: const Text(
+                                      '削除',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true) {
+                              await ref
+                                  .read(reservationViewModelProvider.notifier)
+                                  .deleteReservation(reservation.id);
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('予約を削除しました')),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.delete),
+                          label: const Text('削除'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Container(
+              padding: const EdgeInsets.all(16),
+              child: const Text('ユーザー情報の取得に失敗しました'),
+            ),
+          );
+        },
+      ),
     );
   }
 

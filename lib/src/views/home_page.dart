@@ -764,78 +764,126 @@ class _HorizontalTimelineGridState
     double hourWidth,
     double rowHeight,
   ) {
-    final startHour =
-        reservation.startTime.hour + reservation.startTime.minute / 60.0;
-    final endHour =
-        reservation.endTime.hour + reservation.endTime.minute / 60.0;
-    final duration = endHour - startHour;
+    // ユーザー情報を動的に取得して表示
+    return Consumer(
+      builder: (context, ref, child) {
+        final reservationUserAsync = ref.watch(
+          userByIdProvider(reservation.userId),
+        );
+        final currentUser = ref.read(currentUserProvider).value;
+        final isMyReservation = currentUser?.id == reservation.userId;
 
-    final left = startHour * hourWidth;
-    final width = duration * hourWidth;
+        return reservationUserAsync.when(
+          data: (reservationUser) {
+            final startHour =
+                reservation.startTime.hour +
+                reservation.startTime.minute / 60.0;
+            final endHour =
+                reservation.endTime.hour + reservation.endTime.minute / 60.0;
+            final duration = endHour - startHour;
 
-    // 現在のユーザーの予約かどうかをチェック
-    final currentUser = ref.read(currentUserProvider).value;
-    final isMyReservation = currentUser?.id == reservation.userId;
+            final left = startHour * hourWidth;
+            final width = duration * hourWidth;
 
-    // マイカラーを取得（パース）
-    Color reservationColor = Colors.blue[100]!;
-    Color borderColor = Colors.blue;
+            // ユーザーのマイカラーを取得（リアルタイム）
+            Color reservationColor = Colors.blue[100]!;
+            Color borderColor = Colors.blue;
 
-    if (isMyReservation && currentUser?.myColor != null) {
-      try {
-        final hex = currentUser!.myColor!.replaceAll('#', '');
-        final baseColor = Color(int.parse('FF$hex', radix: 16));
-        reservationColor = baseColor.withOpacity(0.3);
-        borderColor = baseColor;
-      } catch (e) {
-        // カラーコードのパースに失敗した場合はデフォルト色
-        reservationColor = Colors.blue[100]!;
-        borderColor = Colors.blue;
-      }
-    }
+            if (reservationUser?.myColor != null &&
+                reservationUser!.myColor!.isNotEmpty) {
+              try {
+                final hex = reservationUser.myColor!.replaceAll('#', '');
+                final baseColor = Color(int.parse('FF$hex', radix: 16));
+                reservationColor = baseColor.withOpacity(0.3);
+                borderColor = baseColor;
+              } catch (e) {
+                // カラーコードのパースに失敗した場合はデフォルト色
+                reservationColor = Colors.blue[100]!;
+                borderColor = Colors.blue;
+              }
+            }
 
-    return Positioned(
-      left: left,
-      top: 4,
-      width: width,
-      height: rowHeight - 8,
-      child: GestureDetector(
-        onTap: () {
-          _showReservationDialog(context, reservation);
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: BoxDecoration(
-            color: reservationColor,
-            border: Border.all(color: borderColor, width: 1.5),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                reservation.userName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
+            // 自分の予約の場合は枠線を太く、影を追加して目立たせる
+            final borderWidth = isMyReservation ? 3.0 : 1.5;
+            final boxShadow = isMyReservation
+                ? [
+                    BoxShadow(
+                      color: borderColor.withOpacity(0.5),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null;
+
+            // ユーザー名を取得（リアルタイム）
+            final userName = reservationUser?.name ?? '不明なユーザー';
+
+            return Positioned(
+              left: left,
+              top: 4,
+              width: width,
+              height: rowHeight - 8,
+              child: GestureDetector(
+                onTap: () {
+                  _showReservationDialog(context, reservation);
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: reservationColor,
+                    border: Border.all(color: borderColor, width: borderWidth),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: boxShadow,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          // 自分の予約にはアイコンを表示
+                          if (isMyReservation) ...[
+                            Icon(Icons.person, size: 12, color: borderColor),
+                            const SizedBox(width: 2),
+                          ],
+                          Expanded(
+                            child: Text(
+                              userName,
+                              style: TextStyle(
+                                fontWeight: isMyReservation
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
+                                fontSize: 11,
+                                color: isMyReservation ? borderColor : null,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (width > 60 &&
+                          reservation.note != null &&
+                          reservation.note!.isNotEmpty)
+                        Text(
+                          reservation.note!,
+                          style: const TextStyle(fontSize: 10),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                    ],
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
-              if (width > 60 &&
-                  reservation.note != null &&
-                  reservation.note!.isNotEmpty)
-                Text(
-                  reservation.note!,
-                  style: const TextStyle(fontSize: 10),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (error, stack) => const SizedBox.shrink(),
+        );
+      },
     );
   }
 
@@ -847,39 +895,66 @@ class _HorizontalTimelineGridState
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('予約詳細'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('装置: ${reservation.equipmentName}'),
-            Text('予約者: ${reservation.userName}'),
-            Text(
-              '時間: ${DateFormat('HH:mm').format(reservation.startTime)} - ${DateFormat('HH:mm').format(reservation.endTime)}',
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final userAsync = ref.watch(userByIdProvider(reservation.userId));
+
+          return userAsync.when(
+            data: (user) {
+              final userName = user?.name ?? '不明なユーザー';
+
+              return AlertDialog(
+                title: const Text('予約詳細'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('装置: ${reservation.equipmentName}'),
+                    Text('予約者: $userName'),
+                    Text(
+                      '時間: ${DateFormat('HH:mm').format(reservation.startTime)} - ${DateFormat('HH:mm').format(reservation.endTime)}',
+                    ),
+                    if (reservation.note != null &&
+                        reservation.note!.isNotEmpty)
+                      Text('メモ: ${reservation.note}'),
+                  ],
+                ),
+                actions: [
+                  if (canDelete)
+                    TextButton(
+                      onPressed: () async {
+                        await ref
+                            .read(reservationViewModelProvider.notifier)
+                            .deleteReservation(reservation.id);
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      child: const Text(
+                        '削除',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('閉じる'),
+                  ),
+                ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => AlertDialog(
+              title: const Text('エラー'),
+              content: const Text('ユーザー情報の取得に失敗しました'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
             ),
-            if (reservation.note != null && reservation.note!.isNotEmpty)
-              Text('メモ: ${reservation.note}'),
-          ],
-        ),
-        actions: [
-          if (canDelete)
-            TextButton(
-              onPressed: () async {
-                await ref
-                    .read(reservationViewModelProvider.notifier)
-                    .deleteReservation(reservation.id);
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('削除', style: TextStyle(color: Colors.red)),
-            ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -4,7 +4,6 @@ class Reservation {
   final String equipmentId;
   final String equipmentName;
   final String userId;
-  final String userName;
   final DateTime startTime;
   final DateTime endTime;
   final String? note;
@@ -15,7 +14,6 @@ class Reservation {
     required this.equipmentId,
     required this.equipmentName,
     required this.userId,
-    required this.userName,
     required this.startTime,
     required this.endTime,
     this.note,
@@ -29,7 +27,6 @@ class Reservation {
       equipmentId: data['equipmentId'] ?? '',
       equipmentName: data['equipmentName'] ?? '',
       userId: data['userId'] ?? '',
-      userName: data['userName'] ?? '',
       startTime: (data['startTime'] as dynamic)?.toDate() ?? DateTime.now(),
       endTime: (data['endTime'] as dynamic)?.toDate() ?? DateTime.now(),
       note: data['note'],
@@ -43,7 +40,6 @@ class Reservation {
       'equipmentId': equipmentId,
       'equipmentName': equipmentName,
       'userId': userId,
-      'userName': userName,
       'startTime': startTime,
       'endTime': endTime,
       'note': note,
@@ -72,7 +68,6 @@ class Reservation {
     String? equipmentId,
     String? equipmentName,
     String? userId,
-    String? userName,
     DateTime? startTime,
     DateTime? endTime,
     String? note,
@@ -83,7 +78,6 @@ class Reservation {
       equipmentId: equipmentId ?? this.equipmentId,
       equipmentName: equipmentName ?? this.equipmentName,
       userId: userId ?? this.userId,
-      userName: userName ?? this.userName,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       note: note ?? this.note,

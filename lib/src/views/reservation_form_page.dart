@@ -209,7 +209,6 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
       equipmentId: widget.equipment.id,
       equipmentName: widget.equipment.name,
       userId: userId,
-      userName: userName,
       startTime: _startTime,
       endTime: _endTime,
       note: _noteController.text.trim().isEmpty

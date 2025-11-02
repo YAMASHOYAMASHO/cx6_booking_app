@@ -27,6 +27,12 @@ final currentUserProvider = StreamProvider<User?>((ref) {
   return ref.watch(userRepositoryProvider).getUserStream(authUser.uid);
 });
 
+/// 特定ユーザー情報のプロバイダー（family版）- リアルタイム更新のためStreamProviderを使用
+final userByIdProvider = StreamProvider.family<User?, String>((ref, userId) {
+  if (userId.isEmpty) return Stream.value(null);
+  return ref.watch(userRepositoryProvider).getUserStream(userId);
+});
+
 /// 認証ViewModel
 class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   final auth.FirebaseAuth _auth;
