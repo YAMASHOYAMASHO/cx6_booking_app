@@ -120,8 +120,19 @@ class _LocationSelector extends ConsumerWidget {
                 }
                 final uniqueLocations = uniqueLocationsMap.values.toList();
 
+                // 選択中のLocationIDがリストに存在するかチェック
+                String? validSelectedLocationId = selectedLocationId;
+                if (selectedLocationId != null) {
+                  final exists = uniqueLocations.any(
+                    (loc) => loc.id == selectedLocationId,
+                  );
+                  if (!exists) {
+                    validSelectedLocationId = null;
+                  }
+                }
+
                 return DropdownButton<String>(
-                  value: selectedLocationId,
+                  value: validSelectedLocationId,
                   isExpanded: true,
                   hint: const Text('場所を選択'),
                   items: uniqueLocations.map((location) {

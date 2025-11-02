@@ -1,14 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/reservation.dart';
 import '../repositories/reservation_repository.dart';
+import 'auth_viewmodel.dart';
 
 /// ReservationRepositoryのプロバイダー
 final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
   return ReservationRepository();
 });
 
-/// 全予約リストのプロバイダー
+/// 全予約リストのプロバイダー（認証状態を確認）
 final reservationsProvider = StreamProvider<List<Reservation>>((ref) {
+  // 認証状態を確認
+  final authUser = ref.watch(authStateProvider).value;
+
+  // 認証されていない場合は空リストを返す
+  if (authUser == null) {
+    return Stream.value([]);
+  }
+
   return ref.watch(reservationRepositoryProvider).getReservationsStream();
 });
 
@@ -17,25 +26,49 @@ final selectedDateProvider = StateProvider<DateTime>((ref) {
   return DateTime.now();
 });
 
-/// 選択された日付の予約リストのプロバイダー
+/// 選択された日付の予約リストのプロバイダー（認証状態を確認）
 final reservationsByDateProvider = StreamProvider<List<Reservation>>((ref) {
+  // 認証状態を確認
+  final authUser = ref.watch(authStateProvider).value;
+
+  // 認証されていない場合は空リストを返す
+  if (authUser == null) {
+    return Stream.value([]);
+  }
+
   final date = ref.watch(selectedDateProvider);
   return ref
       .watch(reservationRepositoryProvider)
       .getReservationsByDateStream(date);
 });
 
-/// 特定の装置の予約リストのプロバイダー
+/// 特定の装置の予約リストのプロバイダー（認証状態を確認）
 final reservationsByEquipmentProvider =
     StreamProvider.family<List<Reservation>, String>((ref, equipmentId) {
+      // 認証状態を確認
+      final authUser = ref.watch(authStateProvider).value;
+
+      // 認証されていない場合は空リストを返す
+      if (authUser == null) {
+        return Stream.value([]);
+      }
+
       return ref
           .watch(reservationRepositoryProvider)
           .getReservationsByEquipmentStream(equipmentId);
     });
 
-/// 特定のユーザーの予約リストのプロバイダー
+/// 特定のユーザーの予約リストのプロバイダー（認証状態を確認）
 final reservationsByUserProvider =
     StreamProvider.family<List<Reservation>, String>((ref, userId) {
+      // 認証状態を確認
+      final authUser = ref.watch(authStateProvider).value;
+
+      // 認証されていない場合は空リストを返す
+      if (authUser == null) {
+        return Stream.value([]);
+      }
+
       return ref
           .watch(reservationRepositoryProvider)
           .getReservationsByUserStream(userId);

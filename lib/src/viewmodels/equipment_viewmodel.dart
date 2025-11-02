@@ -1,25 +1,50 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/equipment.dart';
 import '../repositories/equipment_repository.dart';
+import 'auth_viewmodel.dart';
 
 /// EquipmentRepositoryのプロバイダー
 final equipmentRepositoryProvider = Provider<EquipmentRepository>((ref) {
   return EquipmentRepository();
 });
 
-/// 全装置リストのプロバイダー
+/// 全装置リストのプロバイダー（認証状態を確認）
 final equipmentsProvider = StreamProvider<List<Equipment>>((ref) {
+  // 認証状態を確認
+  final authUser = ref.watch(authStateProvider).value;
+
+  // 認証されていない場合は空リストを返す
+  if (authUser == null) {
+    return Stream.value([]);
+  }
+
   return ref.watch(equipmentRepositoryProvider).getEquipmentsStream();
 });
 
-/// 利用可能な装置リストのプロバイダー
+/// 利用可能な装置リストのプロバイダー（認証状態を確認）
 final availableEquipmentsProvider = StreamProvider<List<Equipment>>((ref) {
+  // 認証状態を確認
+  final authUser = ref.watch(authStateProvider).value;
+
+  // 認証されていない場合は空リストを返す
+  if (authUser == null) {
+    return Stream.value([]);
+  }
+
   return ref.watch(equipmentRepositoryProvider).getAvailableEquipmentsStream();
 });
 
-/// 特定の場所の装置リストのプロバイダー
+/// 特定の場所の装置リストのプロバイダー（認証状態を確認）
 final equipmentsByLocationProvider =
     StreamProvider.family<List<Equipment>, String>((ref, locationId) {
+      // 認証状態を確認
+      final authUser = ref.watch(authStateProvider).value;
+
+      // 認証されていない場合は空リストを返す
+      if (authUser == null) {
+        return Stream.value([]);
+      }
+
       return ref
           .watch(equipmentRepositoryProvider)
           .getEquipmentsByLocationStream(locationId);

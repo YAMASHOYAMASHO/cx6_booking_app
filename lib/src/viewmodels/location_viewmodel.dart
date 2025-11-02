@@ -1,14 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/location.dart';
 import '../repositories/location_repository.dart';
+import 'auth_viewmodel.dart';
 
 /// LocationRepositoryのプロバイダー
 final locationRepositoryProvider = Provider<LocationRepository>((ref) {
   return LocationRepository();
 });
 
-/// 全場所リストのプロバイダー
+/// 全場所リストのプロバイダー（認証状態を確認）
 final locationsProvider = StreamProvider<List<Location>>((ref) {
+  // 認証状態を確認
+  final authUser = ref.watch(authStateProvider).value;
+
+  // 認証されていない場合は選択をクリアして空リストを返す
+  if (authUser == null) {
+    // 選択状態をリセット
+    Future.microtask(() {
+      ref.read(selectedLocationProvider.notifier).state = null;
+    });
+    return Stream.value([]);
+  }
+
   return ref.watch(locationRepositoryProvider).getLocationsStream();
 });
 

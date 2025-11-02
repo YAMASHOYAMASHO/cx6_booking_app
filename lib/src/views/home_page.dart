@@ -65,7 +65,56 @@ class HomePage extends ConsumerWidget {
     final selectedLocation = ref.watch(selectedLocationProvider);
     final selectedDate = ref.watch(selectedDateProvider);
     final currentUser = ref.watch(currentUserProvider);
+    final authUser = ref.watch(authStateProvider);
 
+    // 認証状態を確認
+    return authUser.when(
+      data: (user) {
+        if (user == null) {
+          // 未認証の場合（念のため）
+          return const Scaffold(body: Center(child: Text('認証が必要です')));
+        }
+
+        // 認証済みの場合、メイン画面を表示
+        return _buildMainScaffold(
+          context,
+          ref,
+          selectedLocation,
+          selectedDate,
+          currentUser,
+        );
+      },
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('認証エラー: $error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.invalidate(authStateProvider);
+                },
+                child: const Text('再試行'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainScaffold(
+    BuildContext context,
+    WidgetRef ref,
+    Location? selectedLocation,
+    DateTime selectedDate,
+    AsyncValue currentUser,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('装置予約システム'),
@@ -183,8 +232,20 @@ class _LocationSelector extends ConsumerWidget {
                 }
                 final uniqueLocations = uniqueLocationsMap.values.toList();
 
-                // 初回自動選択
-                if (selectedLocation == null && uniqueLocations.isNotEmpty) {
+                // 選択中のLocationがリストに存在するかチェック
+                Location? validSelectedLocation = selectedLocation;
+                if (selectedLocation != null) {
+                  final exists = uniqueLocations.any(
+                    (loc) => loc.id == selectedLocation.id,
+                  );
+                  if (!exists) {
+                    validSelectedLocation = null;
+                  }
+                }
+
+                // 初回自動選択または無効な選択をリセット
+                if (validSelectedLocation == null &&
+                    uniqueLocations.isNotEmpty) {
                   Future.microtask(() {
                     ref.read(selectedLocationProvider.notifier).state =
                         uniqueLocations.first;
@@ -193,7 +254,7 @@ class _LocationSelector extends ConsumerWidget {
 
                 return DropdownButton<Location>(
                   isExpanded: true,
-                  value: selectedLocation,
+                  value: validSelectedLocation,
                   items: uniqueLocations.map((location) {
                     return DropdownMenuItem<Location>(
                       value: location,
