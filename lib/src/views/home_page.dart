@@ -712,6 +712,27 @@ class _HorizontalTimelineGridState
     final left = startHour * hourWidth;
     final width = duration * hourWidth;
 
+    // 現在のユーザーの予約かどうかをチェック
+    final currentUser = ref.read(currentUserProvider).value;
+    final isMyReservation = currentUser?.id == reservation.userId;
+
+    // マイカラーを取得（パース）
+    Color reservationColor = Colors.blue[100]!;
+    Color borderColor = Colors.blue;
+
+    if (isMyReservation && currentUser?.myColor != null) {
+      try {
+        final hex = currentUser!.myColor!.replaceAll('#', '');
+        final baseColor = Color(int.parse('FF$hex', radix: 16));
+        reservationColor = baseColor.withOpacity(0.3);
+        borderColor = baseColor;
+      } catch (e) {
+        // カラーコードのパースに失敗した場合はデフォルト色
+        reservationColor = Colors.blue[100]!;
+        borderColor = Colors.blue;
+      }
+    }
+
     return Positioned(
       left: left,
       top: 4,
@@ -725,8 +746,8 @@ class _HorizontalTimelineGridState
           margin: const EdgeInsets.symmetric(horizontal: 1),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.blue[100],
-            border: Border.all(color: Colors.blue, width: 1.5),
+            color: reservationColor,
+            border: Border.all(color: borderColor, width: 1.5),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Column(

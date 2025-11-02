@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:intl/intl.dart';
 import '../models/reservation.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -93,6 +94,7 @@ class _ProfileCard extends ConsumerStatefulWidget {
 
 class _ProfileCardState extends ConsumerState<_ProfileCard> {
   final _nameController = TextEditingController();
+  final _colorCodeController = TextEditingController();
   Color _selectedColor = Colors.blue;
   bool _isEditing = false;
 
@@ -102,12 +104,16 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
     _nameController.text = widget.user.name;
     if (widget.user.myColor != null) {
       _selectedColor = _parseColor(widget.user.myColor!);
+      _colorCodeController.text = widget.user.myColor!;
+    } else {
+      _colorCodeController.text = _colorToHex(Colors.blue);
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _colorCodeController.dispose();
     super.dispose();
   }
 
@@ -122,6 +128,58 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
 
   String _colorToHex(Color color) {
     return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+  }
+
+  void _showColorPicker() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        Color tempColor = _selectedColor;
+        return AlertDialog(
+          title: const Text('カラーを選択'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: _selectedColor,
+              onColorChanged: (color) {
+                tempColor = color;
+              },
+              pickerAreaHeightPercent: 0.8,
+              displayThumbColor: true,
+              enableAlpha: false,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _selectedColor = tempColor;
+                  _colorCodeController.text = _colorToHex(tempColor);
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('選択'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateColorFromCode(String hexCode) {
+    try {
+      final color = _parseColor(hexCode);
+      setState(() {
+        _selectedColor = color;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('無効なカラーコードです')));
+    }
   }
 
   @override
@@ -175,49 +233,57 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
             // マイカラー
             Text('マイカラー', style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 8),
-            if (_isEditing)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    [
-                      Colors.blue,
-                      Colors.red,
-                      Colors.green,
-                      Colors.orange,
-                      Colors.purple,
-                      Colors.pink,
-                      Colors.teal,
-                      Colors.amber,
-                    ].map((color) {
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedColor = color),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _selectedColor == color
-                                  ? Colors.black
-                                  : Colors.transparent,
-                              width: 3,
+            Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: _selectedColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey[300]!, width: 2),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                if (_isEditing) ...[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _showColorPicker,
+                          icon: const Icon(Icons.palette),
+                          label: const Text('カラーピッカーで選択'),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _colorCodeController,
+                          decoration: InputDecoration(
+                            labelText: 'カラーコード',
+                            hintText: '#FF5733',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.check),
+                              onPressed: () {
+                                _updateColorFromCode(_colorCodeController.text);
+                              },
                             ),
                           ),
+                          onSubmitted: _updateColorFromCode,
                         ),
-                      );
-                    }).toList(),
-              )
-            else
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _selectedColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
+                      ],
+                    ),
+                  ),
+                ] else
+                  Text(
+                    _colorToHex(_selectedColor),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+              ],
+            ),
 
             if (_isEditing) ...[
               const SizedBox(height: 16),
@@ -230,6 +296,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                         _nameController.text = widget.user.name;
                         if (widget.user.myColor != null) {
                           _selectedColor = _parseColor(widget.user.myColor!);
+                          _colorCodeController.text = widget.user.myColor!;
                         }
                         _isEditing = false;
                       });
