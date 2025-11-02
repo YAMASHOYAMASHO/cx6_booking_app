@@ -39,7 +39,25 @@ class UserRepository {
   }
 
   /// ユーザー情報を更新
-  Future<void> updateUser(User user) async {
+  Future<void> updateUser(
+    String userId, {
+    String? name,
+    String? myColor,
+  }) async {
+    final updateData = <String, dynamic>{};
+    if (name != null) updateData['name'] = name;
+    if (myColor != null) updateData['myColor'] = myColor;
+
+    if (updateData.isNotEmpty) {
+      await _firestore
+          .collection(_collectionName)
+          .doc(userId)
+          .update(updateData);
+    }
+  }
+
+  /// ユーザー全体を更新
+  Future<void> saveUserFull(User user) async {
     await _firestore
         .collection(_collectionName)
         .doc(user.id)

@@ -11,6 +11,7 @@ import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import 'admin/admin_menu_page.dart';
 import 'reservation_form_page.dart';
+import 'my_page.dart';
 
 /// エラー表示ウィジェット
 class _ErrorDisplay extends StatelessWidget {
@@ -92,14 +93,18 @@ class HomePage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              // プロフィール画面へ遷移
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => const MyPage()));
             },
+            tooltip: 'マイページ',
           ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               ref.read(authViewModelProvider.notifier).signOut();
             },
+            tooltip: 'ログアウト',
           ),
         ],
       ),

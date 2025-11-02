@@ -4,6 +4,7 @@ class User {
   final String name;
   final String email;
   final bool isAdmin;
+  final String? myColor; // マイカラー（16進数カラーコード、例：#FF5733）
   final DateTime createdAt;
 
   User({
@@ -11,6 +12,7 @@ class User {
     required this.name,
     required this.email,
     this.isAdmin = false,
+    this.myColor,
     required this.createdAt,
   });
 
@@ -21,6 +23,7 @@ class User {
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       isAdmin: data['isAdmin'] ?? false,
+      myColor: data['myColor'] as String?,
       createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
     );
   }
@@ -31,6 +34,7 @@ class User {
       'name': name,
       'email': email,
       'isAdmin': isAdmin,
+      'myColor': myColor,
       'createdAt': createdAt,
     };
   }
@@ -40,6 +44,7 @@ class User {
     String? name,
     String? email,
     bool? isAdmin,
+    String? myColor,
     DateTime? createdAt,
   }) {
     return User(
@@ -47,6 +52,7 @@ class User {
       name: name ?? this.name,
       email: email ?? this.email,
       isAdmin: isAdmin ?? this.isAdmin,
+      myColor: myColor ?? this.myColor,
       createdAt: createdAt ?? this.createdAt,
     );
   }

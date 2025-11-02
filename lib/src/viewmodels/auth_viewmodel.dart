@@ -77,6 +77,38 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       await _auth.signOut();
     });
   }
+
+  /// ユーザー情報を更新
+  Future<void> updateUserProfile({
+    required String userId,
+    String? name,
+    String? myColor,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _userRepository.updateUser(userId, name: name, myColor: myColor);
+    });
+  }
+
+  /// パスワードを変更
+  Future<void> changePassword(String newPassword) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('ログインしていません');
+      }
+      await user.updatePassword(newPassword);
+    });
+  }
+
+  /// パスワードリセットメールを送信
+  Future<void> sendPasswordResetEmail(String email) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _auth.sendPasswordResetEmail(email: email);
+    });
+  }
 }
 
 /// AuthViewModelのプロバイダー
