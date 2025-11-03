@@ -1,6 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/reservation.dart';
 
+/// 予約の重複エラー
+class ReservationConflictException implements Exception {
+  final String message;
+  final List<Reservation> conflictingReservations;
+
+  ReservationConflictException(this.message, this.conflictingReservations);
+
+  @override
+  String toString() => message;
+}
+
 /// 予約データのリポジトリ
 class ReservationRepository {
   final FirebaseFirestore _firestore;
@@ -80,7 +91,7 @@ class ReservationRepository {
     );
 
     if (conflicts.isNotEmpty) {
-      throw Exception('指定された時間帯は既に予約されています');
+      throw ReservationConflictException('指定された時間帯は既に予約されています', conflicts);
     }
 
     final docRef = await _firestore
@@ -100,7 +111,7 @@ class ReservationRepository {
     );
 
     if (conflicts.isNotEmpty) {
-      throw Exception('指定された時間帯は既に予約されています');
+      throw ReservationConflictException('指定された時間帯は既に予約されています', conflicts);
     }
 
     await _firestore
@@ -121,18 +132,37 @@ class ReservationRepository {
     DateTime endTime, {
     String? excludeId,
   }) async {
+    // 同じ装置の予約を全て取得
     final snapshot = await _firestore
         .collection(_collectionName)
         .where('equipmentId', isEqualTo: equipmentId)
-        .where('startTime', isLessThan: endTime)
         .get();
 
-    final reservations = snapshot.docs
+    print(
+      '重複チェック開始: equipmentId=$equipmentId, 開始=${startTime.toString()}, 終了=${endTime.toString()}',
+    );
+    print('取得した予約数: ${snapshot.docs.length}');
+
+    // 時間の重複をチェック
+    // 重複条件: (新規予約の開始時刻 < 既存予約の終了時刻) AND (新規予約の終了時刻 > 既存予約の開始時刻)
+    final conflicts = snapshot.docs
         .map((doc) => Reservation.fromFirestore(doc.data(), doc.id))
-        .where((r) => r.endTime.isAfter(startTime))
-        .where((r) => excludeId == null || r.id != excludeId)
+        .where((r) {
+          // 自分自身は除外
+          if (excludeId != null && r.id == excludeId) {
+            return false;
+          }
+          // 時間の重複チェック
+          final hasConflict =
+              startTime.isBefore(r.endTime) && endTime.isAfter(r.startTime);
+          if (hasConflict) {
+            print('重複発見: ${r.id}, 開始=${r.startTime}, 終了=${r.endTime}');
+          }
+          return hasConflict;
+        })
         .toList();
 
-    return reservations;
+    print('重複予約数: ${conflicts.length}');
+    return conflicts;
   }
 }

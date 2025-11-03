@@ -83,25 +83,37 @@ class ReservationViewModel extends StateNotifier<AsyncValue<void>> {
   /// 予約を追加
   Future<void> addReservation(Reservation reservation) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await _repository.addReservation(reservation);
-    });
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 例外を再スローしてUIで捕捉できるようにする
+    }
   }
 
   /// 予約を更新
   Future<void> updateReservation(Reservation reservation) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await _repository.updateReservation(reservation);
-    });
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 例外を再スローしてUIで捕捉できるようにする
+    }
   }
 
   /// 予約を削除
   Future<void> deleteReservation(String id) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await _repository.deleteReservation(id);
-    });
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 例外を再スローしてUIで捕捉できるようにする
+    }
   }
 }
 

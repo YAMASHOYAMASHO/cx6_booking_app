@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/reservation.dart';
 import '../models/equipment.dart';
+import '../repositories/reservation_repository.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 
@@ -236,23 +237,61 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
       }
     } catch (e) {
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('エラー'),
-            content: SelectableText(
-              e.toString(),
-              style: const TextStyle(fontFamily: 'monospace'),
+        // 重複エラーの場合
+        if (e is ReservationConflictException) {
+          _showConflictSnackBar(e.conflictingReservations);
+        } else {
+          // その他のエラー
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('エラー: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('閉じる'),
-              ),
-            ],
-          ),
-        );
+          );
+        }
       }
     }
+  }
+
+  /// 重複エラーをスナックバーで表示
+  void _showConflictSnackBar(List<Reservation> conflicts) {
+    final conflictTimes = conflicts
+        .map((c) {
+          return '${DateFormat('HH:mm').format(c.startTime)}-${DateFormat('HH:mm').format(c.endTime)}';
+        })
+        .join(', ');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.warning_amber, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '予約が重複しています',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('既に予約されている時間帯: $conflictTimes'),
+            const SizedBox(height: 4),
+            const Text('別の時間帯を選択してください', style: TextStyle(fontSize: 12)),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade700,
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
+      ),
+    );
   }
 }
