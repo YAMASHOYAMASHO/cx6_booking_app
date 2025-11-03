@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'src/config/firebase_config.dart';
 import 'src/views/login_page.dart';
 import 'src/views/home_page.dart';
@@ -32,7 +31,25 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
-        textTheme: GoogleFonts.notoSansTextTheme(),
+        // ローカルフォントを使用
+        fontFamily: 'NotoSansJP',
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(fontFamily: 'NotoSansJP'),
+          displayMedium: TextStyle(fontFamily: 'NotoSansJP'),
+          displaySmall: TextStyle(fontFamily: 'NotoSansJP'),
+          headlineLarge: TextStyle(fontFamily: 'NotoSansJP'),
+          headlineMedium: TextStyle(fontFamily: 'NotoSansJP'),
+          headlineSmall: TextStyle(fontFamily: 'NotoSansJP'),
+          titleLarge: TextStyle(fontFamily: 'NotoSansJP'),
+          titleMedium: TextStyle(fontFamily: 'NotoSansJP'),
+          titleSmall: TextStyle(fontFamily: 'NotoSansJP'),
+          bodyLarge: TextStyle(fontFamily: 'NotoSansJP'),
+          bodyMedium: TextStyle(fontFamily: 'NotoSansJP'),
+          bodySmall: TextStyle(fontFamily: 'NotoSansJP'),
+          labelLarge: TextStyle(fontFamily: 'NotoSansJP'),
+          labelMedium: TextStyle(fontFamily: 'NotoSansJP'),
+          labelSmall: TextStyle(fontFamily: 'NotoSansJP'),
+        ),
       ),
       debugShowCheckedModeBanner: false,
       home: authState.when(
