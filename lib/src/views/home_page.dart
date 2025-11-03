@@ -10,6 +10,7 @@ import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import 'admin/admin_menu_page.dart';
+import 'equipment_timeline_page.dart';
 import 'reservation_form_page.dart';
 import 'my_page.dart';
 
@@ -119,6 +120,18 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('装置予約システム'),
         actions: [
+          // 装置別タイムラインボタン
+          IconButton(
+            icon: const Icon(Icons.timeline),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EquipmentTimelinePage(),
+                ),
+              );
+            },
+            tooltip: '装置別タイムライン',
+          ),
           // 管理者メニューボタン（管理者のみ表示）
           currentUser.whenOrNull(
                 data: (user) {

@@ -81,6 +81,43 @@ class ReservationRepository {
         });
   }
 
+  /// 特定の装置の期間内予約を取得（装置別タイムライン用）
+  Stream<List<Reservation>> getReservationsByEquipmentAndDateRange(
+    String equipmentId,
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    final startOfFirstDay = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+      0,
+      0,
+      0,
+    );
+    final endOfLastDay = DateTime(
+      endDate.year,
+      endDate.month,
+      endDate.day,
+      23,
+      59,
+      59,
+    );
+
+    return _firestore
+        .collection(_collectionName)
+        .where('equipmentId', isEqualTo: equipmentId)
+        .where('startTime', isGreaterThanOrEqualTo: startOfFirstDay)
+        .where('startTime', isLessThanOrEqualTo: endOfLastDay)
+        .orderBy('startTime')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => Reservation.fromFirestore(doc.data(), doc.id))
+              .toList();
+        });
+  }
+
   /// 予約を追加
   Future<String> addReservation(Reservation reservation) async {
     // 予約の重複チェック
