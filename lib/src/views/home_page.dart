@@ -9,6 +9,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
+import '../viewmodels/favorite_equipment_viewmodel.dart';
 import 'admin/admin_menu_page.dart';
 import 'equipment_timeline_page.dart';
 import 'reservation_form_page.dart';
@@ -195,12 +196,26 @@ class HomePage extends ConsumerWidget {
           ),
           // 右側: 日付表示とタイムライン
           Expanded(
-            child: selectedLocation != null
-                ? _TimelineView(
+            child: Consumer(
+              builder: (context, ref, _) {
+                final favoriteMode = ref.watch(favoriteModeProvider);
+
+                if (favoriteMode) {
+                  // お気に入りモード
+                  return _FavoriteEquipmentsTimelineView(
+                    selectedDate: selectedDate,
+                  );
+                } else if (selectedLocation != null) {
+                  // 通常のロケーション別表示
+                  return _TimelineView(
                     location: selectedLocation,
                     selectedDate: selectedDate,
-                  )
-                : const Center(child: Text('部屋を選択してください')),
+                  );
+                } else {
+                  return const Center(child: Text('部屋を選択してください'));
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -216,6 +231,7 @@ class _LocationSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locationsAsync = ref.watch(locationsProvider);
     final selectedLocation = ref.watch(selectedLocationProvider);
+    final favoriteMode = ref.watch(favoriteModeProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -245,9 +261,37 @@ class _LocationSelector extends ConsumerWidget {
                 }
                 final uniqueLocations = uniqueLocationsMap.values.toList();
 
+                // お気に入り用の特別なオプションを追加
+                final displayItems = <DropdownMenuItem<String>>[
+                  const DropdownMenuItem<String>(
+                    value: 'FAVORITES',
+                    child: Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 20),
+                        SizedBox(width: 8),
+                        Text('お気に入り'),
+                      ],
+                    ),
+                  ),
+                  ...uniqueLocations.map((location) {
+                    return DropdownMenuItem<String>(
+                      value: location.id,
+                      child: Text(location.name),
+                    );
+                  }),
+                ];
+
+                // 現在の選択値を文字列として取得
+                String? currentValue;
+                if (favoriteMode) {
+                  currentValue = 'FAVORITES';
+                } else if (selectedLocation != null) {
+                  currentValue = selectedLocation.id;
+                }
+
                 // 選択中のLocationがリストに存在するかチェック
                 Location? validSelectedLocation = selectedLocation;
-                if (selectedLocation != null) {
+                if (selectedLocation != null && !favoriteMode) {
                   final exists = uniqueLocations.any(
                     (loc) => loc.id == selectedLocation.id,
                   );
@@ -257,7 +301,8 @@ class _LocationSelector extends ConsumerWidget {
                 }
 
                 // 初回自動選択または無効な選択をリセット
-                if (validSelectedLocation == null &&
+                if (!favoriteMode &&
+                    validSelectedLocation == null &&
                     uniqueLocations.isNotEmpty) {
                   Future.microtask(() {
                     ref.read(selectedLocationProvider.notifier).state =
@@ -265,18 +310,24 @@ class _LocationSelector extends ConsumerWidget {
                   });
                 }
 
-                return DropdownButton<Location>(
+                return DropdownButton<String>(
                   isExpanded: true,
-                  value: validSelectedLocation,
-                  items: uniqueLocations.map((location) {
-                    return DropdownMenuItem<Location>(
-                      value: location,
-                      child: Text(location.name),
-                    );
-                  }).toList(),
-                  onChanged: (location) {
-                    ref.read(selectedLocationProvider.notifier).state =
-                        location;
+                  value: currentValue,
+                  items: displayItems,
+                  onChanged: (value) {
+                    if (value == 'FAVORITES') {
+                      // お気に入りモードをON
+                      ref.read(favoriteModeProvider.notifier).state = true;
+                      ref.read(selectedLocationProvider.notifier).state = null;
+                    } else {
+                      // 通常のロケーション選択
+                      ref.read(favoriteModeProvider.notifier).state = false;
+                      final location = uniqueLocations.firstWhere(
+                        (loc) => loc.id == value,
+                      );
+                      ref.read(selectedLocationProvider.notifier).state =
+                          location;
+                    }
                   },
                 );
               },
@@ -969,6 +1020,111 @@ class _HorizontalTimelineGridState
           );
         },
       ),
+    );
+  }
+}
+
+/// お気に入り装置のタイムライン表示
+class _FavoriteEquipmentsTimelineView extends ConsumerWidget {
+  final DateTime selectedDate;
+
+  const _FavoriteEquipmentsTimelineView({required this.selectedDate});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favoriteDetailsAsync = ref.watch(favoriteEquipmentDetailsProvider);
+    final reservationsAsync = ref.watch(reservationsByDateProvider);
+    final dateFormat = DateFormat('M月d日(E)', 'ja_JP');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 日付表示ヘッダー
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.star, color: Colors.amber),
+              const SizedBox(width: 8),
+              Text(
+                'お気に入り装置 - ${dateFormat.format(selectedDate)}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'タイムラインをクリックして予約',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // タイムライン
+        Expanded(
+          child: favoriteDetailsAsync.when(
+            data: (favoriteDetails) {
+              if (favoriteDetails.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.star_border, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'お気に入り装置がありません',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'マイページからお気に入り装置を追加してください',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return reservationsAsync.when(
+                data: (allReservations) {
+                  // お気に入り装置のIDリストを取得
+                  final favoriteEquipmentIds = favoriteDetails
+                      .map((d) => d.equipment?.id)
+                      .whereType<String>()
+                      .toSet();
+
+                  // 選択日の予約のみフィルタ
+                  final selectedDayReservations = allReservations
+                      .where(
+                        (r) =>
+                            isSameDay(r.startTime, selectedDate) &&
+                            favoriteEquipmentIds.contains(r.equipmentId),
+                      )
+                      .toList();
+
+                  return _HorizontalTimelineGrid(
+                    equipments: favoriteDetails
+                        .map((d) => d.equipment)
+                        .whereType<Equipment>()
+                        .toList(),
+                    reservations: selectedDayReservations,
+                    selectedDate: selectedDate,
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => _ErrorDisplay(error: error),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => _ErrorDisplay(error: error),
+          ),
+        ),
+      ],
     );
   }
 }

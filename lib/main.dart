@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'src/config/firebase_config.dart';
 import 'src/views/login_page.dart';
 import 'src/views/home_page.dart';
@@ -28,6 +29,13 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp(
       title: '装置予約システム',
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('ja', 'JP')],
+      locale: const Locale('ja', 'JP'),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,

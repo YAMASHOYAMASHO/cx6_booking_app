@@ -31,6 +31,9 @@ final selectedLocationProvider = StateProvider<Location?>((ref) => null);
 /// 選択中の場所ID（String?型、管理画面用）
 final selectedLocationIdProvider = StateProvider<String?>((ref) => null);
 
+/// お気に入りフィルタモード（true = お気に入りのみ表示）
+final favoriteModeProvider = StateProvider<bool>((ref) => false);
+
 /// 場所ViewModel
 class LocationViewModel extends StateNotifier<AsyncValue<void>> {
   final LocationRepository _repository;
