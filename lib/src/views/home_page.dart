@@ -171,53 +171,70 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: Row(
-        children: [
-          // 左側: 部屋選択と月カレンダー
-          SizedBox(
-            width: 320,
-            child: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // 画面幅で判定（600px以下をモバイル扱い）
+          final isMobile = constraints.maxWidth < 600;
+
+          if (isMobile) {
+            // スマホ版: 折りたたみカレンダー方式
+            return _MobileLayout(
+              selectedLocation: selectedLocation,
+              selectedDate: selectedDate,
+            );
+          } else {
+            // PC版: 従来の2カラムレイアウト
+            return Row(
               children: [
-                // 部屋選択
-                const _LocationSelector(),
-                // カレンダー
+                // 左側: 部屋選択と月カレンダー
+                SizedBox(
+                  width: 320,
+                  child: Column(
+                    children: [
+                      // 部屋選択
+                      const _LocationSelector(),
+                      // カレンダー
+                      Expanded(
+                        child: _MonthCalendar(
+                          selectedDate: selectedDate,
+                          onDateSelected: (date) {
+                            ref.read(selectedDateProvider.notifier).state =
+                                date;
+                          },
+                        ),
+                      ),
+                      // 前の日・今日・次の日ボタン
+                      _DateNavigationButtons(),
+                    ],
+                  ),
+                ),
+                // 右側: 日付表示とタイムライン
                 Expanded(
-                  child: _MonthCalendar(
-                    selectedDate: selectedDate,
-                    onDateSelected: (date) {
-                      ref.read(selectedDateProvider.notifier).state = date;
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final favoriteMode = ref.watch(favoriteModeProvider);
+
+                      if (favoriteMode) {
+                        // お気に入りモード
+                        return _FavoriteEquipmentsTimelineView(
+                          selectedDate: selectedDate,
+                        );
+                      } else if (selectedLocation != null) {
+                        // 通常のロケーション別表示
+                        return _TimelineView(
+                          location: selectedLocation,
+                          selectedDate: selectedDate,
+                        );
+                      } else {
+                        return const Center(child: Text('部屋を選択してください'));
+                      }
                     },
                   ),
                 ),
-                // 前の日・今日・次の日ボタン
-                _DateNavigationButtons(),
               ],
-            ),
-          ),
-          // 右側: 日付表示とタイムライン
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, _) {
-                final favoriteMode = ref.watch(favoriteModeProvider);
-
-                if (favoriteMode) {
-                  // お気に入りモード
-                  return _FavoriteEquipmentsTimelineView(
-                    selectedDate: selectedDate,
-                  );
-                } else if (selectedLocation != null) {
-                  // 通常のロケーション別表示
-                  return _TimelineView(
-                    location: selectedLocation,
-                    selectedDate: selectedDate,
-                  );
-                } else {
-                  return const Center(child: Text('部屋を選択してください'));
-                }
-              },
-            ),
-          ),
-        ],
+            );
+          }
+        },
       ),
     );
   }
@@ -1125,6 +1142,204 @@ class _FavoriteEquipmentsTimelineView extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// スマホ用レイアウト（折りたたみカレンダー方式）
+class _MobileLayout extends ConsumerStatefulWidget {
+  final Location? selectedLocation;
+  final DateTime selectedDate;
+
+  const _MobileLayout({
+    required this.selectedLocation,
+    required this.selectedDate,
+  });
+
+  @override
+  ConsumerState<_MobileLayout> createState() => _MobileLayoutState();
+}
+
+class _MobileLayoutState extends ConsumerState<_MobileLayout> {
+  bool _isCalendarExpanded = false;
+  bool _isLocationExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final favoriteMode = ref.watch(favoriteModeProvider);
+
+    return Column(
+      children: [
+        // 日付選択（折りたたみ可能）
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 2,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          child: ExpansionTile(
+            initiallyExpanded: _isCalendarExpanded,
+            onExpansionChanged: (expanded) {
+              setState(() => _isCalendarExpanded = expanded);
+            },
+            leading: const Icon(Icons.calendar_today, color: Colors.blue),
+            title: Text(
+              DateFormat('yyyy年M月d日(E)', 'ja_JP').format(widget.selectedDate),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            children: [
+              // カレンダー
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: _MonthCalendar(
+                  selectedDate: widget.selectedDate,
+                  onDateSelected: (date) {
+                    ref.read(selectedDateProvider.notifier).state = date;
+                    // 日付選択後、カレンダーを自動で閉じる
+                    setState(() => _isCalendarExpanded = false);
+                  },
+                ),
+              ),
+              // 日付ナビゲーションボタン
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _DateNavigationButtons(),
+              ),
+            ],
+          ),
+        ),
+        // 部屋選択（折りたたみ可能）
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 2,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          child: ExpansionTile(
+            initiallyExpanded: _isLocationExpanded,
+            onExpansionChanged: (expanded) {
+              setState(() => _isLocationExpanded = expanded);
+            },
+            leading: const Icon(Icons.room, color: Colors.blue),
+            title: Text(
+              widget.selectedLocation?.name ?? '部屋を選択してください',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            children: [
+              // 部屋選択リスト
+              _MobileLocationSelector(
+                onSelected: () {
+                  // 部屋選択後、自動で閉じる
+                  setState(() => _isLocationExpanded = false);
+                },
+              ),
+            ],
+          ),
+        ),
+        // お気に入りモード切り替え
+        Container(
+          color: Colors.grey[100],
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 20),
+              const SizedBox(width: 8),
+              const Text('お気に入り装置のみ表示'),
+              const Spacer(),
+              Switch(
+                value: favoriteMode,
+                onChanged: (value) {
+                  ref.read(favoriteModeProvider.notifier).state = value;
+                },
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // タイムライン（メインコンテンツ）
+        Expanded(
+          child: favoriteMode
+              ? _FavoriteEquipmentsTimelineView(
+                  selectedDate: widget.selectedDate,
+                )
+              : widget.selectedLocation != null
+              ? _TimelineView(
+                  location: widget.selectedLocation!,
+                  selectedDate: widget.selectedDate,
+                )
+              : const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.room_outlined, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          '部屋を選択してください',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// スマホ用部屋選択（リスト形式）
+class _MobileLocationSelector extends ConsumerWidget {
+  final VoidCallback onSelected;
+
+  const _MobileLocationSelector({required this.onSelected});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locationsAsync = ref.watch(locationsProvider);
+    final selectedLocation = ref.watch(selectedLocationProvider);
+
+    return locationsAsync.when(
+      data: (locations) {
+        if (locations.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('部屋がありません'),
+          );
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: locations.map((location) {
+            final isSelected = selectedLocation?.id == location.id;
+            return ListTile(
+              leading: Icon(
+                Icons.room,
+                color: isSelected ? Colors.blue : Colors.grey,
+              ),
+              title: Text(
+                location.name,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.blue : Colors.black,
+                ),
+              ),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: Colors.blue)
+                  : null,
+              onTap: () {
+                ref.read(selectedLocationProvider.notifier).state = location;
+                onSelected();
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: _ErrorDisplay(error: error),
+      ),
     );
   }
 }
