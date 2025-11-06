@@ -71,19 +71,35 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
           ),
         ],
       ),
-      body: Row(
-        children: [
-          // 左サイドバー
-          _buildSidebar(selectedLocation, selectedEquipment, dateRange),
-          // 中央タイムライン
-          Expanded(
-            child: _buildTimeline(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+
+          if (isMobile) {
+            // スマホ版レイアウト
+            return _buildMobileLayout(
               selectedLocation,
               selectedEquipment,
               dateRange,
-            ),
-          ),
-        ],
+            );
+          } else {
+            // PC版レイアウト（従来通り）
+            return Row(
+              children: [
+                // 左サイドバー
+                _buildSidebar(selectedLocation, selectedEquipment, dateRange),
+                // 中央タイムライン
+                Expanded(
+                  child: _buildTimeline(
+                    selectedLocation,
+                    selectedEquipment,
+                    dateRange,
+                  ),
+                ),
+              ],
+            );
+          }
+        },
       ),
     );
   }
@@ -952,6 +968,168 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
           );
         },
       ),
+    );
+  }
+
+  /// スマホ用レイアウト
+  Widget _buildMobileLayout(
+    Location? selectedLocation,
+    String? selectedEquipment,
+    DateRange dateRange,
+  ) {
+    return Column(
+      children: [
+        // 部屋・装置選択（折りたたみ可能）
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 2,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          child: ExpansionTile(
+            leading: const Icon(Icons.settings, color: Colors.blue),
+            title: Text(
+              selectedEquipment != null ? '装置選択済み' : '部屋と装置を選択してください',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            children: [
+              Container(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 部屋選択
+                        const Text(
+                          '部屋',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final locationsAsync = ref.watch(locationsProvider);
+                            return locationsAsync.when(
+                              data: (locations) =>
+                                  DropdownButtonFormField<Location>(
+                                    value: selectedLocation,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    items: locations.map((location) {
+                                      return DropdownMenuItem(
+                                        value: location,
+                                        child: Text(location.name),
+                                      );
+                                    }).toList(),
+                                    onChanged: (location) {
+                                      ref
+                                              .read(
+                                                selectedLocationProvider
+                                                    .notifier,
+                                              )
+                                              .state =
+                                          location;
+                                      ref
+                                              .read(
+                                                selectedEquipmentProvider
+                                                    .notifier,
+                                              )
+                                              .state =
+                                          null;
+                                    },
+                                  ),
+                              loading: () => const CircularProgressIndicator(),
+                              error: (_, __) => const Text('エラー'),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // 装置選択
+                        if (selectedLocation != null) ...[
+                          const Text(
+                            '装置',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final equipmentsAsync = ref.watch(
+                                equipmentsByLocationProvider(
+                                  selectedLocation.id,
+                                ),
+                              );
+                              return equipmentsAsync.when(
+                                data: (equipments) {
+                                  if (equipments.isEmpty) {
+                                    return const Text('この部屋に装置がありません');
+                                  }
+                                  return Column(
+                                    children: equipments.map((equipment) {
+                                      final isSelected =
+                                          selectedEquipment == equipment.id;
+                                      return RadioListTile<String>(
+                                        value: equipment.id,
+                                        groupValue: selectedEquipment,
+                                        title: Text(equipment.name),
+                                        selected: isSelected,
+                                        onChanged: (value) {
+                                          ref
+                                                  .read(
+                                                    selectedEquipmentProvider
+                                                        .notifier,
+                                                  )
+                                                  .state =
+                                              value;
+                                        },
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                                loading: () =>
+                                    const CircularProgressIndicator(),
+                                error: (_, __) => const Text('エラー'),
+                              );
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // タイムライン
+        Expanded(
+          child: selectedEquipment != null
+              ? _buildTimeline(selectedLocation, selectedEquipment, dateRange)
+              : const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          '装置を選択してください',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }

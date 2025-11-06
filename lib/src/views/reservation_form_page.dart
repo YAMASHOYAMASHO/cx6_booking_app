@@ -205,6 +205,27 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
       return;
     }
 
+    // ローディング表示
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('予約を保存中...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     final reservation = Reservation(
       id: widget.reservation?.id ?? '',
       equipmentId: widget.equipment.id,
@@ -230,23 +251,115 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
       }
 
       if (mounted) {
+        // ローディングダイアログを閉じる
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('予約を保存しました')));
+        // 予約フォームを閉じる
+        Navigator.of(context).pop();
+        // 成功メッセージ
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(widget.reservation == null ? '予約を作成しました' : '予約を更新しました'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
+        // ローディングダイアログを閉じる
+        Navigator.of(context).pop();
+
         // 重複エラーの場合
         if (e is ReservationConflictException) {
           _showConflictSnackBar(e.conflictingReservations);
         } else {
-          // その他のエラー
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('エラー: ${e.toString()}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 4),
+          // その他のエラー（ネットワークエラー等）
+          String errorMessage = 'エラーが発生しました';
+
+          if (e.toString().contains('network') ||
+              e.toString().contains('SocketException') ||
+              e.toString().contains('Failed host lookup')) {
+            errorMessage = 'ネットワークエラー: インターネット接続を確認してください';
+          } else if (e.toString().contains('permission-denied')) {
+            errorMessage = '権限エラー: 予約の保存権限がありません';
+          } else if (e.toString().contains('unavailable')) {
+            errorMessage = 'サーバーエラー: Firebaseに接続できません';
+          }
+
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('予約の保存に失敗しました'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      errorMessage,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '詳細なエラー情報:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: SelectableText(
+                        e.toString(),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '対処方法:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('• インターネット接続を確認してください'),
+                    const Text('• 時間をおいて再度お試しください'),
+                    const Text('• 問題が続く場合は管理者に連絡してください'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('閉じる'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _saveReservation(userId, userName);
+                  },
+                  child: const Text('再試行'),
+                ),
+              ],
             ),
           );
         }

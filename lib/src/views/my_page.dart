@@ -27,70 +27,79 @@ class MyPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('マイページ')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // プロフィール設定カード
-            _ProfileCard(user: currentUser),
-            const SizedBox(height: 16),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // スマホ対応：横幅に応じてパディングを調整
+          final isMobile = constraints.maxWidth < 600;
+          final padding = isMobile ? 8.0 : 16.0;
 
-            // パスワード変更カード
-            const _PasswordCard(),
-            const SizedBox(height: 16),
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // プロフィール設定カード
+                _ProfileCard(user: currentUser),
+                const SizedBox(height: 16),
 
-            // お気に入り装置セクション
-            const _FavoriteEquipmentsSection(),
-            const SizedBox(height: 16),
+                // パスワード変更カード
+                const _PasswordCard(),
+                const SizedBox(height: 16),
 
-            // お気に入りテンプレートセクション
-            const _FavoriteTemplatesSection(),
-            const SizedBox(height: 16),
+                // お気に入り装置セクション
+                const _FavoriteEquipmentsSection(),
+                const SizedBox(height: 16),
 
-            // 自分の予約一覧
-            const Text(
-              '自分の予約',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            allReservationsAsync.when(
-              data: (allReservations) {
-                // 自分の予約のみフィルタ
-                final myReservations =
-                    allReservations
-                        .where((r) => r.userId == currentUser.id)
-                        .toList()
-                      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+                // お気に入りテンプレートセクション
+                const _FavoriteTemplatesSection(),
+                const SizedBox(height: 16),
 
-                if (myReservations.isEmpty) {
-                  return const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('予約がありません'),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: myReservations
-                      .map(
-                        (reservation) =>
-                            _ReservationCard(reservation: reservation),
-                      )
-                      .toList(),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('エラー: $error'),
+                // 自分の予約一覧
+                const Text(
+                  '自分の予約',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-              ),
+                const SizedBox(height: 8),
+                allReservationsAsync.when(
+                  data: (allReservations) {
+                    // 自分の予約のみフィルタ
+                    final myReservations =
+                        allReservations
+                            .where((r) => r.userId == currentUser.id)
+                            .toList()
+                          ..sort((a, b) => b.startTime.compareTo(a.startTime));
+
+                    if (myReservations.isEmpty) {
+                      return const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('予約がありません'),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: myReservations
+                          .map(
+                            (reservation) =>
+                                _ReservationCard(reservation: reservation),
+                          )
+                          .toList(),
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('エラー: $error'),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
