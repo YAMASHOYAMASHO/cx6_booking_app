@@ -793,101 +793,39 @@ class _AddFavoriteEquipmentDialogState
 
     return AlertDialog(
       title: const Text('お気に入り装置を追加'),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ロケーション選択
-            const Text('ロケーション', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            locationsAsync.when(
-              data: (locations) {
-                return DropdownButtonFormField<String>(
-                  value: _selectedLocationId,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'ロケーションを選択',
-                  ),
-                  items: locations
-                      .map(
-                        (location) => DropdownMenuItem(
-                          value: location.id,
-                          child: Text(location.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedLocationId = value;
-                      _selectedEquipmentId = null; // 装置選択をリセット
-                    });
-                  },
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (error, stack) => SelectableText(
-                'エラー: $error',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 装置選択
-            const Text('装置', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            if (_selectedLocationId == null)
+      content: SingleChildScrollView(
+        child: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ロケーション選択
               const Text(
-                'まずロケーションを選択してください',
-                style: TextStyle(color: Colors.grey),
-              )
-            else
-              equipmentsAsync.when(
-                data: (equipments) {
-                  // 選択されたロケーションの装置のみフィルタ
-                  final filteredEquipments = equipments
-                      .where((e) => e.locationId == _selectedLocationId)
-                      .toList();
-
-                  // すでにお気に入りに登録されている装置を除外
-                  final favoriteEquipmentIds = favoritesAsync.maybeWhen(
-                    data: (favorites) =>
-                        favorites.map((f) => f.equipmentId).toSet(),
-                    orElse: () => <String>{},
-                  );
-
-                  final availableEquipments = filteredEquipments
-                      .where((e) => !favoriteEquipmentIds.contains(e.id))
-                      .toList();
-
-                  if (availableEquipments.isEmpty) {
-                    return const Text(
-                      'このロケーションには追加可能な装置がありません',
-                      style: TextStyle(color: Colors.grey),
-                    );
-                  }
-
+                'ロケーション',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              locationsAsync.when(
+                data: (locations) {
                   return DropdownButtonFormField<String>(
-                    value: _selectedEquipmentId,
+                    value: _selectedLocationId,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      hintText: '装置を選択',
+                      hintText: 'ロケーションを選択',
                     ),
-                    items: availableEquipments
+                    items: locations
                         .map(
-                          (equipment) => DropdownMenuItem(
-                            value: equipment.id,
-                            child: Text(equipment.name),
+                          (location) => DropdownMenuItem(
+                            value: location.id,
+                            child: Text(location.name),
                           ),
                         )
                         .toList(),
                     onChanged: (value) {
                       setState(() {
-                        _selectedEquipmentId = value;
+                        _selectedLocationId = value;
+                        _selectedEquipmentId = null; // 装置選択をリセット
                       });
                     },
                   );
@@ -901,7 +839,74 @@ class _AddFavoriteEquipmentDialogState
                   ),
                 ),
               ),
-          ],
+              const SizedBox(height: 16),
+
+              // 装置選択
+              const Text('装置', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (_selectedLocationId == null)
+                const Text(
+                  'まずロケーションを選択してください',
+                  style: TextStyle(color: Colors.grey),
+                )
+              else
+                equipmentsAsync.when(
+                  data: (equipments) {
+                    // 選択されたロケーションの装置のみフィルタ
+                    final filteredEquipments = equipments
+                        .where((e) => e.locationId == _selectedLocationId)
+                        .toList();
+
+                    // すでにお気に入りに登録されている装置を除外
+                    final favoriteEquipmentIds = favoritesAsync.maybeWhen(
+                      data: (favorites) =>
+                          favorites.map((f) => f.equipmentId).toSet(),
+                      orElse: () => <String>{},
+                    );
+
+                    final availableEquipments = filteredEquipments
+                        .where((e) => !favoriteEquipmentIds.contains(e.id))
+                        .toList();
+
+                    if (availableEquipments.isEmpty) {
+                      return const Text(
+                        'このロケーションには追加可能な装置がありません',
+                        style: TextStyle(color: Colors.grey),
+                      );
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      value: _selectedEquipmentId,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: '装置を選択',
+                      ),
+                      items: availableEquipments
+                          .map(
+                            (equipment) => DropdownMenuItem(
+                              value: equipment.id,
+                              child: Text(equipment.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedEquipmentId = value;
+                        });
+                      },
+                    );
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, stack) => SelectableText(
+                    'エラー: $error',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -1272,89 +1277,98 @@ class _TemplateExecuteDialogState
 
     return AlertDialog(
       title: Text('「${widget.template.name}」を実行'),
-      content: SizedBox(
-        width: 500,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('基準日を選択', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _baseDate,
-                  firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                  locale: const Locale('ja', 'JP'),
-                );
-
-                if (date != null) {
-                  setState(() {
-                    _baseDate = date;
-                  });
-                  _checkConflicts();
-                }
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(dateFormat.format(_baseDate)),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            if (_isChecking)
-              const Center(child: CircularProgressIndicator())
-            else if (_conflicts != null) ...[
+      content: SingleChildScrollView(
+        child: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               const Text(
-                '競合チェック結果',
+                '基準日を選択',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
+              InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _baseDate,
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 30),
+                    ),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                    locale: const Locale('ja', 'JP'),
+                  );
 
-              if (_conflicts!.isEmpty)
-                const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('競合なし。実行可能です。'),
-                  ],
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    border: Border.all(color: Colors.orange),
-                    borderRadius: BorderRadius.circular(4),
+                  if (date != null) {
+                    setState(() {
+                      _baseDate = date;
+                    });
+                    _checkConflicts();
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.warning, color: Colors.orange),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${_conflicts!.length}件の競合があります',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '競合をスキップして実行するか、基準日を変更してください。',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+                  child: Text(dateFormat.format(_baseDate)),
                 ),
+              ),
+              const SizedBox(height: 16),
+
+              if (_isChecking)
+                const Center(child: CircularProgressIndicator())
+              else if (_conflicts != null) ...[
+                const Text(
+                  '競合チェック結果',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+
+                if (_conflicts!.isEmpty)
+                  const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('競合なし。実行可能です。'),
+                    ],
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      border: Border.all(color: Colors.orange),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.warning, color: Colors.orange),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${_conflicts!.length}件の競合があります',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '競合をスキップして実行するか、基準日を変更してください。',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+              ], // if (_conflicts != null) の終わり
             ],
-          ],
+          ),
         ),
       ),
       actions: [

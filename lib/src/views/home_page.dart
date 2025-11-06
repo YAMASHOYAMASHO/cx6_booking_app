@@ -1186,16 +1186,21 @@ class _MobileLayoutState extends ConsumerState<_MobileLayout> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             children: [
-              // カレンダー
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _MonthCalendar(
-                  selectedDate: widget.selectedDate,
-                  onDateSelected: (date) {
-                    ref.read(selectedDateProvider.notifier).state = date;
-                    // 日付選択後、カレンダーを自動で閉じる
-                    setState(() => _isCalendarExpanded = false);
-                  },
+              // カレンダー（高さ制限でスクロール可能に）
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: _MonthCalendar(
+                      selectedDate: widget.selectedDate,
+                      onDateSelected: (date) {
+                        ref.read(selectedDateProvider.notifier).state = date;
+                        // 日付選択後、カレンダーを自動で閉じる
+                        setState(() => _isCalendarExpanded = false);
+                      },
+                    ),
+                  ),
                 ),
               ),
               // 日付ナビゲーションボタン
@@ -1305,31 +1310,40 @@ class _MobileLocationSelector extends ConsumerWidget {
           );
         }
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: locations.map((location) {
-            final isSelected = selectedLocation?.id == location.id;
-            return ListTile(
-              leading: Icon(
-                Icons.room,
-                color: isSelected ? Colors.blue : Colors.grey,
-              ),
-              title: Text(
-                location.name,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.blue : Colors.black,
-                ),
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check, color: Colors.blue)
-                  : null,
-              onTap: () {
-                ref.read(selectedLocationProvider.notifier).state = location;
-                onSelected();
-              },
-            );
-          }).toList(),
+        // 部屋が多い場合に備えて高さ制限とスクロール
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 300),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: locations.map((location) {
+                final isSelected = selectedLocation?.id == location.id;
+                return ListTile(
+                  leading: Icon(
+                    Icons.room,
+                    color: isSelected ? Colors.blue : Colors.grey,
+                  ),
+                  title: Text(
+                    location.name,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected ? Colors.blue : Colors.black,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    ref.read(selectedLocationProvider.notifier).state =
+                        location;
+                    onSelected();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
         );
       },
       loading: () => const Padding(
