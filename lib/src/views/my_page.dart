@@ -11,6 +11,7 @@ import '../viewmodels/favorite_reservation_template_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/location_viewmodel.dart';
 import 'template_edit_page.dart';
+import 'reservation_form_page.dart';
 
 /// マイページ
 class MyPage extends ConsumerWidget {
@@ -568,42 +569,86 @@ class _ReservationCard extends ConsumerWidget {
           ],
         ),
         trailing: !isPast
-            ? IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('予約の削除'),
-                      content: const Text('この予約を削除しますか？'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('キャンセル'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text(
-                            '削除',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirmed == true) {
-                    await ref
-                        .read(reservationViewModelProvider.notifier)
-                        .deleteReservation(reservation.id);
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('予約を削除しました')),
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 編集ボタン
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () async {
+                      // 装置情報を取得
+                      final equipmentsAsync = ref.read(equipmentsProvider);
+                      final equipment = equipmentsAsync.value?.firstWhere(
+                        (e) => e.id == reservation.equipmentId,
+                        orElse: () => throw Exception('装置が見つかりません'),
                       );
-                    }
-                  }
-                },
+
+                      if (equipment == null) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('装置情報の取得に失敗しました')),
+                          );
+                        }
+                        return;
+                      }
+
+                      // 予約編集画面へ遷移
+                      if (context.mounted) {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ReservationFormPage(
+                              equipment: equipment,
+                              selectedDate: DateTime(
+                                reservation.startTime.year,
+                                reservation.startTime.month,
+                                reservation.startTime.day,
+                              ),
+                              reservation: reservation,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  // 削除ボタン
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('予約の削除'),
+                          content: const Text('この予約を削除しますか？'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('キャンセル'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                '削除',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        await ref
+                            .read(reservationViewModelProvider.notifier)
+                            .deleteReservation(reservation.id);
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('予約を削除しました')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
               )
             : null,
       ),

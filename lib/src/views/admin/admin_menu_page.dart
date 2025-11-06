@@ -37,9 +37,10 @@ class AdminMenuPage extends ConsumerWidget {
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: GridView.count(
-              crossAxisCount: 2,
+              crossAxisCount: 4,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
+              childAspectRatio: 1.5, // カードの縦横比（1.0で正方形、1.2で横長）
               children: [
                 _MenuCard(
                   title: '装置管理',

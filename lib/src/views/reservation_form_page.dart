@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../models/reservation.dart';
 import '../models/equipment.dart';
 import '../repositories/reservation_repository.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
+import '../viewmodels/equipment_viewmodel.dart';
+import '../viewmodels/location_viewmodel.dart';
 
 /// 予約フォーム画面
 class ReservationFormPage extends ConsumerStatefulWidget {
@@ -31,6 +34,8 @@ class ReservationFormPage extends ConsumerStatefulWidget {
 
 class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
   final _formKey = GlobalKey<FormState>();
+  late DateTime _selectedDate;
+  late Equipment _selectedEquipment;
   late DateTime _startTime;
   late DateTime _endTime;
   final _noteController = TextEditingController();
@@ -38,6 +43,9 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
   @override
   void initState() {
     super.initState();
+    _selectedDate = widget.selectedDate;
+    _selectedEquipment = widget.equipment;
+
     if (widget.reservation != null) {
       _startTime = widget.reservation!.startTime;
       _endTime = widget.reservation!.endTime;
@@ -68,66 +76,264 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
   @override
   Widget build(BuildContext context) {
     final currentUser = ref.watch(currentUserProvider).value;
+    final equipmentsAsync = ref.watch(equipmentsProvider);
+    final locationsAsync = ref.watch(locationsProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.reservation == null ? '新規予約' : '予約編集')),
       body: currentUser == null
           ? const Center(child: Text('ユーザー情報を読み込んでいます...'))
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 装置名
-                    Text(
-                      '装置: ${widget.equipment.name}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    // 装置選択
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.settings, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text(
+                                  '装置選択',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            equipmentsAsync.when(
+                              data: (equipments) {
+                                if (equipments.isEmpty) {
+                                  return const Text('装置がありません');
+                                }
+
+                                // 部屋ごとにグループ化
+                                final equipmentsByLocation =
+                                    <String, List<Equipment>>{};
+                                for (final equipment in equipments) {
+                                  equipmentsByLocation
+                                      .putIfAbsent(
+                                        equipment.locationId,
+                                        () => [],
+                                      )
+                                      .add(equipment);
+                                }
+
+                                return locationsAsync.when(
+                                  data: (locations) {
+                                    return DropdownButtonFormField<String>(
+                                      value: _selectedEquipment.id,
+                                      decoration: const InputDecoration(
+                                        labelText: '装置',
+                                        border: OutlineInputBorder(),
+                                        prefixIcon: Icon(Icons.devices),
+                                      ),
+                                      items: locations
+                                          .map((location) {
+                                            final locationEquipments =
+                                                equipmentsByLocation[location
+                                                    .id] ??
+                                                [];
+
+                                            return [
+                                              // 部屋のヘッダー
+                                              DropdownMenuItem<String>(
+                                                value: null,
+                                                enabled: false,
+                                                child: Text(
+                                                  location.name,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ),
+                                              // その部屋の装置
+                                              ...locationEquipments.map((
+                                                equipment,
+                                              ) {
+                                                return DropdownMenuItem<String>(
+                                                  value: equipment.id,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          left: 16.0,
+                                                        ),
+                                                    child: Text(equipment.name),
+                                                  ),
+                                                );
+                                              }),
+                                            ];
+                                          })
+                                          .expand((list) => list)
+                                          .toList(),
+                                      onChanged: (equipmentId) {
+                                        if (equipmentId != null) {
+                                          final equipment = equipments
+                                              .firstWhere(
+                                                (e) => e.id == equipmentId,
+                                              );
+                                          setState(() {
+                                            _selectedEquipment = equipment;
+                                          });
+                                        }
+                                      },
+                                    );
+                                  },
+                                  loading: () => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  error: (error, _) => Text('エラー: $error'),
+                                );
+                              },
+                              loading: () => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              error: (error, _) => Text('エラー: $error'),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    // 日付
-                    Text(
-                      '日付: ${DateFormat('yyyy年M月d日(E)', 'ja_JP').format(widget.selectedDate)}',
-                      style: const TextStyle(fontSize: 16),
+                    const SizedBox(height: 16),
+                    // 日付選択
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.calendar_today, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text(
+                                  '日付選択',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            InkWell(
+                              onTap: () => _showDatePicker(context),
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: '日付',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.event),
+                                ),
+                                child: Text(
+                                  DateFormat(
+                                    'yyyy年M月d日(E)',
+                                    'ja_JP',
+                                  ).format(_selectedDate),
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    // 開始時刻
-                    _buildTimePicker(
-                      label: '開始時刻',
-                      time: _startTime,
-                      onChanged: (time) {
-                        setState(() {
-                          _startTime = time;
-                          if (_endTime.isBefore(_startTime)) {
-                            _endTime = _startTime.add(const Duration(hours: 1));
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // 終了時刻
-                    _buildTimePicker(
-                      label: '終了時刻',
-                      time: _endTime,
-                      onChanged: (time) {
-                        setState(() {
-                          _endTime = time;
-                        });
-                      },
+                    // 時刻設定
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.access_time, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text(
+                                  '時刻設定',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // 開始時刻
+                            _buildTimePicker(
+                              label: '開始時刻',
+                              time: _startTime,
+                              onChanged: (time) {
+                                setState(() {
+                                  _startTime = time;
+                                  if (_endTime.isBefore(_startTime)) {
+                                    _endTime = _startTime.add(
+                                      const Duration(hours: 1),
+                                    );
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            // 終了時刻
+                            _buildTimePicker(
+                              label: '終了時刻',
+                              time: _endTime,
+                              onChanged: (time) {
+                                setState(() {
+                                  _endTime = time;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     // メモ
-                    TextFormField(
-                      controller: _noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'メモ（任意）',
-                        border: OutlineInputBorder(),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.note, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text(
+                                  'メモ',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _noteController,
+                              decoration: const InputDecoration(
+                                labelText: 'メモ（任意）',
+                                border: OutlineInputBorder(),
+                                hintText: '備考や特記事項を入力してください',
+                              ),
+                              maxLines: 3,
+                            ),
+                          ],
+                        ),
                       ),
-                      maxLines: 3,
                     ),
                     const SizedBox(height: 24),
                     // 保存ボタン
@@ -136,13 +342,98 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
                       child: ElevatedButton(
                         onPressed: () =>
                             _saveReservation(currentUser.id, currentUser.name),
-                        child: const Text('予約を保存'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          widget.reservation == null ? '予約を作成' : '予約を更新',
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  /// 日付選択ダイアログを表示
+  Future<void> _showDatePicker(BuildContext context) async {
+    DateTime? selectedDate;
+
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '日付を選択',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: TableCalendar(
+                  firstDay: DateTime.now().subtract(const Duration(days: 365)),
+                  lastDay: DateTime.now().add(const Duration(days: 365)),
+                  focusedDay: _selectedDate,
+                  selectedDayPredicate: (day) => isSameDay(_selectedDate, day),
+                  onDaySelected: (selected, focused) {
+                    selectedDate = selected;
+                  },
+                  calendarFormat: CalendarFormat.month,
+                  locale: 'ja_JP',
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('キャンセル'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (selectedDate != null) {
+                        setState(() {
+                          _selectedDate = selectedDate!;
+                          // 日付変更時に時刻も更新
+                          _startTime = DateTime(
+                            _selectedDate.year,
+                            _selectedDate.month,
+                            _selectedDate.day,
+                            _startTime.hour,
+                            _startTime.minute,
+                          );
+                          _endTime = DateTime(
+                            _selectedDate.year,
+                            _selectedDate.month,
+                            _selectedDate.day,
+                            _endTime.hour,
+                            _endTime.minute,
+                          );
+                        });
+                      }
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -228,8 +519,8 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
 
     final reservation = Reservation(
       id: widget.reservation?.id ?? '',
-      equipmentId: widget.equipment.id,
-      equipmentName: widget.equipment.name,
+      equipmentId: _selectedEquipment.id,
+      equipmentName: _selectedEquipment.name,
       userId: userId,
       startTime: _startTime,
       endTime: _endTime,

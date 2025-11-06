@@ -973,6 +973,7 @@ class _HorizontalTimelineGridState
     final canDelete =
         currentUser?.id == reservation.userId ||
         (currentUser?.isAdmin ?? false);
+    final canEdit = currentUser?.id == reservation.userId;
 
     showDialog(
       context: context,
@@ -1001,6 +1002,40 @@ class _HorizontalTimelineGridState
                   ],
                 ),
                 actions: [
+                  if (canEdit)
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+
+                        // 装置情報を取得
+                        final equipmentsAsync = ref.read(equipmentsProvider);
+                        final equipment = equipmentsAsync.value?.firstWhere(
+                          (e) => e.id == reservation.equipmentId,
+                          orElse: () => throw Exception('装置が見つかりません'),
+                        );
+
+                        if (equipment != null && context.mounted) {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ReservationFormPage(
+                                equipment: equipment,
+                                selectedDate: DateTime(
+                                  reservation.startTime.year,
+                                  reservation.startTime.month,
+                                  reservation.startTime.day,
+                                ),
+                                reservation: reservation,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        '編集',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ),
                   if (canDelete)
                     TextButton(
                       onPressed: () async {
