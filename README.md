@@ -2,6 +2,26 @@
 
 研究室での装置予約を管理するWebアプリケーションです。
 
+## 🚀 クイックスタート
+
+### 初回セットアップ
+
+プロジェクトをクローンした後、以下のコマンドで設定ファイルを作成:
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item lib\src\config\auth_config.dart.example lib\src\config\auth_config.dart
+```
+
+**macOS/Linux:**
+```bash
+cp lib/src/config/auth_config.dart.example lib/src/config/auth_config.dart
+```
+
+詳細は **[SETUP.md](SETUP.md)** を参照してください。
+
+---
+
 ## 🏗️ アーキテクチャ
 
 ### 技術スタック

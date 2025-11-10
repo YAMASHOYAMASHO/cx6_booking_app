@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../config/auth_config.dart';
 
 /// ログイン画面
 class LoginPage extends ConsumerStatefulWidget {
@@ -12,7 +13,7 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _userIdController = TextEditingController(); // emailController から変更
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   bool _isSignUp = false;
@@ -20,7 +21,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _userIdController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
     super.dispose();
@@ -68,26 +69,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                // メールアドレス
+                // ユーザーID（学籍番号 または メールアドレス）
                 TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'メールアドレス',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
+                  controller: _userIdController,
+                  decoration: InputDecoration(
+                    labelText: AuthConfig.getUserIdLabel(),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.badge),
+                    hintText: AuthConfig.getUserIdPlaceholder(),
+                    helperText: AuthConfig.getUserIdHelpText(),
+                    helperMaxLines: 2,
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [
-                    AutofillHints.email,
-                    AutofillHints.username,
-                  ],
+                  keyboardType: TextInputType.text,
+                  autofillHints: const [AutofillHints.username],
                   onFieldSubmitted: (_) => _submit(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'メールアドレスを入力してください';
+                      return '学籍番号またはメールアドレスを入力してください';
                     }
-                    if (!value.contains('@')) {
-                      return '有効なメールアドレスを入力してください';
+                    // @が含まれている場合はメールアドレスとして検証
+                    if (value.contains('@')) {
+                      if (!value.contains('.')) {
+                        return '有効なメールアドレスを入力してください';
+                      }
                     }
                     return null;
                   },
@@ -169,21 +173,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     try {
+      // ユーザーIDをメールアドレスに変換
+      final email = AuthConfig.userIdToEmail(_userIdController.text.trim());
+
       if (_isSignUp) {
         await ref
             .read(authViewModelProvider.notifier)
             .signUpWithEmail(
-              _emailController.text.trim(),
+              email,
               _passwordController.text,
               _nameController.text.trim(),
             );
       } else {
         await ref
             .read(authViewModelProvider.notifier)
-            .signInWithEmail(
-              _emailController.text.trim(),
-              _passwordController.text,
-            );
+            .signInWithEmail(email, _passwordController.text);
       }
     } catch (e) {
       // エラーは authViewModelProvider の状態で処理される

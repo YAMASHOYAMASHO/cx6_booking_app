@@ -70,3 +70,6 @@ app.*.map.json
 *.key
 *.pem
 secrets/
+
+# 環境固有の設定ファイル（auth_config.dart.example をテンプレートとして使用）
+lib/src/config/auth_config.dart

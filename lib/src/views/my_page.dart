@@ -9,6 +9,7 @@ import '../viewmodels/reservation_viewmodel.dart';
 import '../viewmodels/favorite_equipment_viewmodel.dart';
 import '../viewmodels/favorite_reservation_template_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
+import '../config/auth_config.dart';
 import '../viewmodels/location_viewmodel.dart';
 import 'template_edit_page.dart';
 import 'reservation_form_page.dart';
@@ -233,10 +234,18 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
             ),
             const SizedBox(height: 16),
 
-            // メールアドレス（編集不可）
-            Text('メールアドレス', style: TextStyle(color: Colors.grey[600])),
+            // ユーザーID（読み取り専用）
+            Text('ユーザーID', style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 4),
-            Text(widget.user.email, style: const TextStyle(fontSize: 16)),
+            Text(
+              AuthConfig.emailToUserId(widget.user.email),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'メールアドレス: ${widget.user.email}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
             const SizedBox(height: 16),
 
             // 名前

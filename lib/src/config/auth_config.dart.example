@@ -1,0 +1,88 @@
+/// 認証設定（テンプレートファイル）
+///
+/// 【使用方法】
+/// 1. このファイルを `auth_config.dart` という名前でコピー
+/// 2. `defaultEmailDomain` を実際の大学ドメインに変更
+/// 3. 必要に応じてUIテキストも変更
+///
+/// 【重要】実際の設定ファイル（auth_config.dart）はGitにコミットしないでください
+class AuthConfig {
+  /// デフォルトメールドメイン
+  ///
+  /// 学生の学籍番号に自動で付加されるドメインです。
+  ///
+  /// 【編集箇所】システム導入時にここを実際の大学ドメインに変更してください
+  ///
+  /// 例:
+  /// - 'stu.kobe-u.ac.jp' → 学籍番号 123456 は 123456@stu.kobe-u.ac.jp になります
+  /// - 'u-tokyo.ac.jp' → 学籍番号 123456 は 123456@u-tokyo.ac.jp になります
+  /// - 'waseda.jp' → 学籍番号 123456 は 123456@waseda.jp になります
+  static const String defaultEmailDomain = 'your-university.ac.jp';  // ← ここを編集
+
+  /// ユーザーIDからメールアドレスを生成
+  ///
+  /// - IDに@が含まれていない場合: デフォルトドメインを付加（学生用）
+  /// - IDに@が含まれている場合: そのまま使用（ゲスト・教員・管理者用）
+  ///
+  /// 使用例:
+  /// - '123456' → '123456@your-university.ac.jp'
+  /// - 'guest001@guest.com' → 'guest001@guest.com'
+  /// - 'teacher@staff.university.ac.jp' → 'teacher@staff.university.ac.jp'
+  static String userIdToEmail(String userId) {
+    final trimmedId = userId.trim();
+
+    // すでにメールアドレス形式の場合はそのまま返す
+    if (trimmedId.contains('@')) {
+      return trimmedId;
+    }
+
+    // 学籍番号の場合はドメインを付加
+    return '$trimmedId@$defaultEmailDomain';
+  }
+
+  /// メールアドレスからユーザーIDを抽出
+  ///
+  /// - デフォルトドメインの場合: @より前の部分（学籍番号）を返す
+  /// - その他のドメインの場合: フルメールアドレスを返す
+  ///
+  /// 使用例:
+  /// - '123456@your-university.ac.jp' → '123456'
+  /// - 'guest001@guest.com' → 'guest001@guest.com'
+  static String emailToUserId(String email) {
+    final trimmedEmail = email.trim();
+
+    // デフォルトドメインの場合は学籍番号部分のみ
+    if (trimmedEmail.endsWith('@$defaultEmailDomain')) {
+      return trimmedEmail.substring(0, trimmedEmail.indexOf('@'));
+    }
+
+    // その他のドメインはフルメールアドレス
+    return trimmedEmail;
+  }
+
+  /// 表示用のユーザーIDラベルを取得
+  ///
+  /// UI上で表示するラベルテキストです。
+  ///
+  /// 【編集箇所】必要に応じて変更してください
+  static String getUserIdLabel() {
+    return '学籍番号 または メールアドレス';
+  }
+
+  /// ヘルプテキストを取得
+  ///
+  /// ログイン画面で表示するヘルプメッセージです。
+  ///
+  /// 【編集箇所】必要に応じて変更してください
+  static String getUserIdHelpText() {
+    return '学生: 学籍番号のみ入力\n'
+        'ゲスト・教員: フルメールアドレスを入力';
+  }
+
+  /// 入力例を取得
+  ///
+  /// 【編集箇所】必要に応じて変更してください
+  static String getUserIdPlaceholder() {
+    return '例: 123456 または guest@example.com';
+  }
+}
