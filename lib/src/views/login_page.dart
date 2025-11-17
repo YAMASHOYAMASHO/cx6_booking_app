@@ -48,7 +48,41 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
+                // 新規登録時の説明
+                if (_isSignUp) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      border: Border.all(color: Colors.blue.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '※ 事前に申請済みのユーザーのみアカウント作成が可能です。\n'
+                            '学籍番号が登録されていない場合は管理者にお問い合わせください。',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade900,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 // 名前（サインアップ時のみ）
                 if (_isSignUp) ...[
                   TextFormField(
@@ -173,8 +207,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     try {
-      // ユーザーIDをメールアドレスに変換
-      final email = AuthConfig.userIdToEmail(_userIdController.text.trim());
+      // ユーザーID（学籍番号）を取得
+      final studentId = _userIdController.text.trim();
+      // メールアドレスに変換
+      final email = AuthConfig.userIdToEmail(studentId);
 
       if (_isSignUp) {
         await ref
@@ -183,6 +219,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               email,
               _passwordController.text,
               _nameController.text.trim(),
+              studentId, // 学籍番号を追加
             );
       } else {
         await ref
@@ -196,22 +233,45 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   /// エラーメッセージを分かりやすく変換
   String _getErrorMessage(String error) {
+    // 事前登録関連のエラー
+    if (error.contains('登録が許可されていません') ||
+        error.contains('この学籍番号は登録が許可されていません')) {
+      return '【登録許可なし】この学籍番号は事前登録されていません。\n'
+          '管理者に学籍番号の登録を依頼してください。';
+    }
+
+    // 既に登録済み
+    if (error.contains('既に登録済み') || error.contains('already registered')) {
+      return '【登録済み】この学籍番号は既に使用されています。\n'
+          'ログイン画面からログインしてください。';
+    }
+
     // Firebase認証エラーを分かりやすいメッセージに変換
     if (error.contains('invalid-email') ||
         error.contains('user-not-found') ||
         error.contains('wrong-password') ||
         error.contains('invalid-credential')) {
-      return 'メールアドレスまたはパスワードが間違っています';
+      return '【認証エラー】学籍番号またはパスワードが間違っています。';
     } else if (error.contains('email-already-in-use')) {
-      return 'このメールアドレスは既に使用されています';
+      return '【重複エラー】この学籍番号は既に使用されています。\n'
+          '別の学籍番号をお使いいただくか、ログインしてください。';
     } else if (error.contains('weak-password')) {
-      return 'パスワードが弱すぎます。6文字以上で設定してください';
+      return '【パスワードエラー】パスワードが弱すぎます。\n'
+          '6文字以上で設定してください。';
     } else if (error.contains('network-request-failed')) {
-      return 'ネットワークエラーが発生しました。接続を確認してください';
+      return '【ネットワークエラー】接続を確認してください。';
     } else if (error.contains('too-many-requests')) {
-      return 'ログイン試行回数が多すぎます。しばらく待ってから再度お試しください';
+      return '【試行回数超過】ログイン試行回数が多すぎます。\n'
+          'しばらく待ってから再度お試しください。';
+    } else if (error.contains('permission-denied') ||
+        error.contains('PERMISSION_DENIED')) {
+      return '【権限エラー】データベースへのアクセスが拒否されました。\n'
+          '学籍番号が事前登録されているか確認してください。';
     }
-    return 'ログインに失敗しました。入力内容をご確認ください';
+
+    // その他のエラー（詳細を含める）
+    return '【エラー】${_isSignUp ? "アカウント作成" : "ログイン"}に失敗しました。\n'
+        '詳細: ${error.length > 100 ? error.substring(0, 100) + "..." : error}';
   }
 }
 
@@ -225,18 +285,46 @@ class _ErrorDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.red.shade50,
-        border: Border.all(color: Colors.red),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.shade400, width: 2),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error, color: Colors.red),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(error, style: TextStyle(color: Colors.red.shade900)),
+          Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red.shade700, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'エラーが発生しました',
+                  style: TextStyle(
+                    color: Colors.red.shade900,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              error,
+              style: TextStyle(
+                color: Colors.red.shade900,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),

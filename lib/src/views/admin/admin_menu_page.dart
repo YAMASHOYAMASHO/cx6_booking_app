@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import 'equipment_management_page.dart';
 import 'reservation_management_page.dart';
+import 'allowed_users_page.dart';
 
 /// 管理者メニュー画面
 class AdminMenuPage extends ConsumerWidget {
@@ -62,6 +63,18 @@ class AdminMenuPage extends ConsumerWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const ReservationManagementPage(),
+                      ),
+                    );
+                  },
+                ),
+                _MenuCard(
+                  title: '事前登録管理',
+                  icon: Icons.how_to_reg,
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const AllowedUsersPage(),
                       ),
                     );
                   },

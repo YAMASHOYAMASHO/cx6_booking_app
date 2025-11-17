@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../models/user.dart';
 import '../repositories/user_repository.dart';
+import '../repositories/allowed_user_repository.dart';
 
 /// FirebaseAuthのプロバイダー
 final firebaseAuthProvider = Provider<auth.FirebaseAuth>((ref) {
@@ -37,8 +38,9 @@ final userByIdProvider = StreamProvider.family<User?, String>((ref, userId) {
 class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   final auth.FirebaseAuth _auth;
   final UserRepository _userRepository;
+  final AllowedUserRepository _allowedUserRepository;
 
-  AuthViewModel(this._auth, this._userRepository)
+  AuthViewModel(this._auth, this._userRepository, this._allowedUserRepository)
     : super(const AsyncValue.data(null));
 
   /// メールとパスワードでサインイン
@@ -50,20 +52,44 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   }
 
   /// メールとパスワードでサインアップ
+  /// studentId: 学籍番号（事前登録確認用）
   Future<void> signUpWithEmail(
     String email,
     String password,
     String name,
+    String studentId,
   ) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
+      print('🔍 [SignUp] 開始: studentId=$studentId, email=$email');
+
+      // 1. 事前登録確認（エラーは AllowedUserRepository から詳細に投げられる）
+      print('📋 [SignUp] Step 1: 事前登録確認中...');
+      final allowedUser = await _allowedUserRepository.checkIfAllowed(
+        studentId,
+      );
+      print(
+        '✅ [SignUp] Step 1: 事前登録確認成功 - allowedUser: ${allowedUser?.studentId}',
+      );
+
+      // 2. Firebase Authenticationにユーザー作成
+      print('🔐 [SignUp] Step 2: Firebase Auth ユーザー作成中...');
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print(
+        '✅ [SignUp] Step 2: Firebase Auth ユーザー作成成功 - UID: ${credential.user?.uid}',
+      );
 
-      // Firestoreにユーザー情報を保存
+      // 3. Firestoreにユーザー情報を保存
       if (credential.user != null) {
+        print('💾 [SignUp] Step 3: Firestore ユーザー情報保存中...');
+        print('   - UID: ${credential.user!.uid}');
+        print('   - Name: $name');
+        print('   - Email: $email');
+        print('   - IsAdmin: false');
+
         final user = User(
           id: credential.user!.uid,
           name: name,
@@ -71,8 +97,33 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
           isAdmin: false,
           createdAt: DateTime.now(),
         );
-        await _userRepository.saveUser(user);
+
+        try {
+          await _userRepository.saveUser(user);
+          print('✅ [SignUp] Step 3: Firestore ユーザー情報保存成功');
+        } catch (e) {
+          print('❌ [SignUp] Step 3: Firestore ユーザー情報保存失敗');
+          print('   - エラー: $e');
+          print('   - エラータイプ: ${e.runtimeType}');
+          rethrow;
+        }
+
+        // 4. allowedUsersを登録済みに更新
+        print('🏁 [SignUp] Step 4: allowedUsers 登録済みフラグ更新中...');
+        try {
+          await _allowedUserRepository.markAsRegistered(
+            studentId,
+            credential.user!.uid,
+          );
+          print('✅ [SignUp] Step 4: allowedUsers 登録済みフラグ更新成功');
+        } catch (e) {
+          print('❌ [SignUp] Step 4: allowedUsers 登録済みフラグ更新失敗');
+          print('   - エラー: $e');
+          rethrow;
+        }
       }
+
+      print('🎉 [SignUp] 全ての処理が完了しました');
     });
   }
 
@@ -123,5 +174,6 @@ final authViewModelProvider =
       return AuthViewModel(
         ref.watch(firebaseAuthProvider),
         ref.watch(userRepositoryProvider),
+        ref.watch(allowedUserRepositoryProvider),
       );
     });

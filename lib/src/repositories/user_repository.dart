@@ -32,10 +32,28 @@ class UserRepository {
 
   /// ユーザーを作成または更新
   Future<void> saveUser(User user) async {
-    await _firestore
-        .collection(_collectionName)
-        .doc(user.id)
-        .set(user.toFirestore());
+    print('💾 [UserRepo] saveUser 開始:');
+    print('   - ID: ${user.id}');
+    print('   - Name: ${user.name}');
+    print('   - Email: ${user.email}');
+    print('   - IsAdmin: ${user.isAdmin}');
+
+    try {
+      await _firestore
+          .collection(_collectionName)
+          .doc(user.id)
+          .set(user.toFirestore());
+      print('✅ [UserRepo] saveUser 成功');
+    } catch (e) {
+      print('❌ [UserRepo] saveUser 失敗: $e');
+      print('   - エラータイプ: ${e.runtimeType}');
+      if (e.toString().contains('PERMISSION_DENIED')) {
+        print('⚠️ [UserRepo] Firestoreセキュリティルールで拒否されました');
+        print('   - コレクション: $_collectionName');
+        print('   - ドキュメントID: ${user.id}');
+      }
+      rethrow;
+    }
   }
 
   /// ユーザー情報を更新
