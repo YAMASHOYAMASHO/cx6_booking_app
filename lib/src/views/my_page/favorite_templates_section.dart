@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/favorite_reservation_template.dart';
 import '../../viewmodels/favorite_reservation_template_viewmodel.dart';
 import '../template_edit_page.dart';
-import '../template_execution_page.dart';
+import '../template_execution_dialog.dart';
 
 /// お気に入り予約テンプレート（マクロ予約）セクション
 class FavoriteTemplatesSection extends ConsumerWidget {
@@ -92,13 +92,10 @@ class FavoriteTemplatesSection extends ConsumerWidget {
                               size: 32,
                             ),
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => TemplateExecutionPage(
-                                    template: template,
-                                  ),
-                                ),
+                              showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    TemplateExecutionDialog(template: template),
                               );
                             },
                             tooltip: 'このテンプレートで予約',
@@ -110,9 +107,8 @@ class FavoriteTemplatesSection extends ConsumerWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => TemplateEditPage(
-                                    template: template,
-                                  ),
+                                  builder: (context) =>
+                                      TemplateEditPage(templateId: template.id),
                                 ),
                               );
                             },
@@ -125,9 +121,7 @@ class FavoriteTemplatesSection extends ConsumerWidget {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text('テンプレートの削除'),
-                                  content: Text(
-                                    '「${template.name}」を削除しますか？',
-                                  ),
+                                  content: Text('「${template.name}」を削除しますか？'),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>

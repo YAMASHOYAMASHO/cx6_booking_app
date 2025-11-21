@@ -1,162 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:intl/intl.dart';
-import '../models/reservation.dart';
-import '../models/favorite_equipment.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/reservation_viewmodel.dart';
-import '../viewmodels/favorite_equipment_viewmodel.dart';
 import '../viewmodels/favorite_reservation_template_viewmodel.dart';
-import '../viewmodels/equipment_viewmodel.dart';
-import '../config/auth_config.dart';
-import '../viewmodels/location_viewmodel.dart';
-import 'template_edit_page.dart';
-import 'reservation_form_page.dart';
-import 'my_page/profile_card.dart';
-import 'my_page/password_card.dart';
-import 'my_page/favorite_equipments_section.dart';
-import 'my_page/favorite_templates_section.dart';
-import 'my_page/reservation_card.dart';
-
-/// マイページ
-class MyPage extends ConsumerWidget {
-  const MyPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final currentUser = ref.watch(currentUserProvider).value;
-    final allReservationsAsync = ref.watch(reservationsProvider);
-
-    if (currentUser == null) {
-      return const Scaffold(body: Center(child: Text('ログインしていません')));
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('マイページ')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // スマホ対応：横幅に応じてパディングを調整
-          final isMobile = constraints.maxWidth < 600;
-          final padding = isMobile ? 8.0 : 16.0;
-
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(padding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // プロフィール設定カード
-                ProfileCard(user: currentUser),
-                const SizedBox(height: 16),
-
-                // パスワード変更カード
-                const PasswordCard(),
-                const SizedBox(height: 16),
-
-                // お気に入り装置セクション
-                const FavoriteEquipmentsSection(),
-                const SizedBox(height: 16),
-
-                // お気に入りテンプレートセクション
-                const FavoriteTemplatesSection(),
-                const SizedBox(height: 16),
-
-                // 自分の予約一覧
-                const Text(
-                  '自分の予約',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                allReservationsAsync.when(
-                  data: (allReservations) {
-                    // 自分の予約のみフィルタ
-                    final myReservations =
-                        allReservations
-                            .where((r) => r.userId == currentUser.id)
-                            .toList()
-                          ..sort((a, b) => b.startTime.compareTo(a.startTime));
-
-                    if (myReservations.isEmpty) {
-                      return const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text('予約がありません'),
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      children: myReservations
-                          .map(
-                            (reservation) =>
-                                ReservationCard(reservation: reservation),
-                          )
-                          .toList(),
-                    );
-                  },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error, color: Colors.red, size: 48),
-                          const SizedBox(height: 16),
-                          const Text(
-                            '予約取得エラー',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          SelectableText(
-                            '$error',
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showExecuteDialog(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic template,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => _TemplateExecuteDialog(template: template),
-    );
-  }
-}
+import '../models/favorite_reservation_template.dart';
 
 /// テンプレート実行ダイアログ
-class _TemplateExecuteDialog extends ConsumerStatefulWidget {
-  final dynamic template;
+class TemplateExecutionDialog extends ConsumerStatefulWidget {
+  final FavoriteReservationTemplate template;
 
-  const _TemplateExecuteDialog({required this.template});
+  const TemplateExecutionDialog({super.key, required this.template});
 
   @override
-  ConsumerState<_TemplateExecuteDialog> createState() =>
-      _TemplateExecuteDialogState();
+  ConsumerState<TemplateExecutionDialog> createState() =>
+      _TemplateExecutionDialogState();
 }
 
-class _TemplateExecuteDialogState
-    extends ConsumerState<_TemplateExecuteDialog> {
+class _TemplateExecutionDialogState
+    extends ConsumerState<TemplateExecutionDialog> {
   DateTime _baseDate = DateTime.now();
   bool _isChecking = false;
   bool _isExecuting = false;

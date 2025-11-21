@@ -246,9 +246,17 @@ class _AddFavoriteDialogState extends ConsumerState<_AddFavoriteDialog> {
           onPressed: _selectedEquipmentId == null
               ? null
               : () async {
-                  await ref
-                      .read(favoriteEquipmentViewModelProvider.notifier)
-                      .addFavorite(_selectedEquipmentId!);
+                  final equipments = ref.read(equipmentsProvider).value;
+                  final equipment = equipments?.firstWhere(
+                    (e) => e.id == _selectedEquipmentId,
+                    orElse: () => throw Exception('装置が見つかりません'),
+                  );
+
+                  if (equipment != null) {
+                    await ref
+                        .read(favoriteEquipmentViewModelProvider.notifier)
+                        .addFavorite(equipment);
+                  }
                   if (mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(

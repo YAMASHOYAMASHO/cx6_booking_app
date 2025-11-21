@@ -14,6 +14,8 @@ import 'admin/admin_menu_page.dart';
 import 'equipment_timeline_page.dart';
 import 'reservation_form_page.dart';
 import 'my_page.dart';
+import 'home/month_calendar.dart';
+import 'home/timeline/timeline_view.dart';
 
 /// エラー表示ウィジェット
 class _ErrorDisplay extends StatelessWidget {
@@ -173,27 +175,13 @@ class HomePage extends ConsumerWidget {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // 画面幅で判定（600px以下をモバイル扱い）
-          final isMobile = constraints.maxWidth < 600;
-
-          if (isMobile) {
-            // スマホ版: 折りたたみカレンダー方式
-            return _MobileLayout(
-              selectedLocation: selectedLocation,
-              selectedDate: selectedDate,
-            );
-          } else {
-            // PC版: 従来の2カラムレイアウト
-            return Row(
-              children: [
-                // 左側: 部屋選択と月カレンダー
-                SizedBox(
-              ),
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (error, stack) => const SizedBox.shrink(),
-        );
+          // モバイル版レイアウトを使用
+          return _MobileLayout(
+            selectedLocation: selectedLocation,
+            selectedDate: selectedDate,
+          );
+        },
+      );
       },
     );
   }
@@ -457,7 +445,7 @@ class _MobileLayoutState extends ConsumerState<_MobileLayout> {
                 child: SingleChildScrollView(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _MonthCalendar(
+                    child: MonthCalendar(
                       selectedDate: widget.selectedDate,
                       onDateSelected: (date) {
                         ref.read(selectedDateProvider.notifier).state = date;
@@ -471,7 +459,7 @@ class _MobileLayoutState extends ConsumerState<_MobileLayout> {
               // 日付ナビゲーションボタン
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: _DateNavigationButtons(),
+                child: DateNavigationButtons(),
               ),
             ],
           ),
@@ -529,7 +517,7 @@ class _MobileLayoutState extends ConsumerState<_MobileLayout> {
                   selectedDate: widget.selectedDate,
                 )
               : widget.selectedLocation != null
-              ? _TimelineView(
+              ? TimelineView(
                   location: widget.selectedLocation!,
                   selectedDate: widget.selectedDate,
                 )
