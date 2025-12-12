@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// 初期データを投入するヘルパークラス
 class SeedData {
@@ -19,9 +20,9 @@ class SeedData {
 
       if (existing.docs.isEmpty) {
         await _firestore.collection('locations').add(location);
-        print('場所を追加しました: ${location['name']}');
+        debugPrint('場所を追加しました: ${location['name']}');
       } else {
-        print('場所は既に存在します: ${location['name']}');
+        debugPrint('場所は既に存在します: ${location['name']}');
       }
     }
   }
@@ -36,7 +37,7 @@ class SeedData {
         .get();
 
     if (locationSnapshot.docs.isEmpty) {
-      print('場所が見つかりません。先にseedLocations()を実行してください。');
+      debugPrint('場所が見つかりません。先にseedLocations()を実行してください。');
       return;
     }
 
@@ -70,9 +71,9 @@ class SeedData {
 
       if (existing.docs.isEmpty) {
         await _firestore.collection('equipments').add(equipment);
-        print('装置を追加しました: ${equipment['name']}');
+        debugPrint('装置を追加しました: ${equipment['name']}');
       } else {
-        print('装置は既に存在します: ${equipment['name']}');
+        debugPrint('装置は既に存在します: ${equipment['name']}');
       }
     }
   }
@@ -90,7 +91,7 @@ class SeedData {
         .get();
 
     if (equipmentSnapshot.docs.isEmpty) {
-      print('装置が見つかりません。先にseedEquipments()を実行してください。');
+      debugPrint('装置が見つかりません。先にseedEquipments()を実行してください。');
       return;
     }
 
@@ -122,7 +123,7 @@ class SeedData {
 
     for (var reservation in reservations) {
       await _firestore.collection('reservations').add(reservation);
-      print(
+      debugPrint(
         '予約を追加しました: ${reservation['startTime']} - ${reservation['endTime']}',
       );
     }
@@ -135,20 +136,20 @@ class SeedData {
     for (var doc in reservations.docs) {
       await doc.reference.delete();
     }
-    print('予約データを削除しました (${reservations.docs.length}件)');
+    debugPrint('予約データを削除しました (${reservations.docs.length}件)');
 
     // 装置を削除
     final equipments = await _firestore.collection('equipments').get();
     for (var doc in equipments.docs) {
       await doc.reference.delete();
     }
-    print('装置データを削除しました (${equipments.docs.length}件)');
+    debugPrint('装置データを削除しました (${equipments.docs.length}件)');
 
     // 場所を削除
     final locations = await _firestore.collection('locations').get();
     for (var doc in locations.docs) {
       await doc.reference.delete();
     }
-    print('場所データを削除しました (${locations.docs.length}件)');
+    debugPrint('場所データを削除しました (${locations.docs.length}件)');
   }
 }

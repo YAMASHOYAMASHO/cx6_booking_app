@@ -126,6 +126,13 @@ final selectedEquipmentReservationsProvider = StreamProvider<List<Reservation>>(
       endDate: dateRange.end,
     );
 
-    return ref.watch(reservationsByEquipmentAndDateRangeProvider(query).stream);
+    // 直接familyプロバイダーのStreamを返す（.streamは非推奨）
+    return ref
+        .watch(reservationRepositoryProvider)
+        .getReservationsByEquipmentAndDateRange(
+          query.equipmentId,
+          query.startDate,
+          query.endDate,
+        );
   },
 );

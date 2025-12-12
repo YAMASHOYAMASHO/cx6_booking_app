@@ -399,8 +399,8 @@ class _HorizontalTimelineGrid extends ConsumerWidget {
               try {
                 final hex = user.myColor!.replaceAll('#', '');
                 final baseColor = Color(int.parse('FF$hex', radix: 16));
-                reservationColor = baseColor.withOpacity(0.7);
-                borderColor = baseColor.withOpacity(0.9);
+                reservationColor = baseColor.withValues(alpha: 0.7);
+                borderColor = baseColor.withValues(alpha: 0.9);
               } catch (e) {
                 // カラーコードのパースに失敗した場合はデフォルト色
                 reservationColor = Colors.blue.shade300;

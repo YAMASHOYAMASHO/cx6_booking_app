@@ -647,7 +647,7 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
       height: rowHeight - 8,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.3),
+          color: Colors.blue.withValues(alpha: 0.3),
           border: Border.all(color: Colors.blue, width: 2),
           borderRadius: BorderRadius.circular(4),
         ),
@@ -813,7 +813,7 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
               try {
                 final hex = user.myColor!.replaceAll('#', '');
                 final baseColor = Color(int.parse('FF$hex', radix: 16));
-                reservationColor = baseColor.withOpacity(0.3);
+                reservationColor = baseColor.withValues(alpha: 0.3);
                 borderColor = baseColor;
               } catch (e) {
                 // カラーコードのパースに失敗した場合はデフォルト色
@@ -827,7 +827,7 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
             final boxShadow = isMyReservation
                 ? [
                     BoxShadow(
-                      color: borderColor.withOpacity(0.5),
+                      color: borderColor.withValues(alpha: 0.5),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -882,8 +882,8 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
                                 fontSize: 11,
                                 color:
                                     (reservationColor.computeLuminance() *
-                                                reservationColor.opacity +
-                                            (1 - reservationColor.opacity)) >
+                                                reservationColor.a +
+                                            (1 - reservationColor.a)) >
                                         0.5
                                     ? Colors.black
                                     : Colors.white,
