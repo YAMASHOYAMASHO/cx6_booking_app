@@ -11,6 +11,7 @@ import '../viewmodels/equipment_viewmodel.dart'
     show equipmentsByLocationProvider, equipmentsProvider;
 import '../viewmodels/equipment_timeline_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
+import '../viewmodels/cache_viewmodel.dart';
 import 'widgets/equipment_selector.dart';
 import 'reservation_form_page.dart';
 
@@ -59,6 +60,14 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
+              // キャッシュをクリア
+              final equipmentId = ref.read(selectedEquipmentProvider);
+              if (equipmentId != null) {
+                ref
+                    .read(reservationCacheServiceProvider)
+                    .invalidateByEquipment(equipmentId);
+              }
+
               // 日付範囲をリセット
               final today = DateTime.now();
               final startOfToday = DateTime(today.year, today.month, today.day);
@@ -66,8 +75,15 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
                 start: startOfToday,
                 end: startOfToday.add(const Duration(days: 20)),
               );
+
+              // プロバイダーを再取得させる
+              ref.invalidate(reservationsByEquipmentAndDateRangeProvider);
+
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('予約データを更新しました')));
             },
-            tooltip: '今日から3週間に戻す',
+            tooltip: 'データを更新（キャッシュクリア）',
           ),
         ],
       ),

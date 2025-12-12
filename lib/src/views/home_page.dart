@@ -10,6 +10,7 @@ import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import '../viewmodels/favorite_equipment_viewmodel.dart';
+import '../viewmodels/cache_viewmodel.dart';
 import 'admin/admin_menu_page.dart';
 import 'equipment_timeline_page.dart';
 import 'reservation_form_page.dart';
@@ -121,6 +122,22 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('装置予約システム'),
         actions: [
+          // リロードボタン（キャッシュクリア）
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // 全キャッシュをクリア
+              ref.read(reservationCacheServiceProvider).invalidateAll();
+
+              // プロバイダーを再取得させる
+              ref.invalidate(reservationsByDateProvider);
+
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('予約データを更新しました')));
+            },
+            tooltip: 'データを更新（キャッシュクリア）',
+          ),
           // 装置別タイムラインボタン
           IconButton(
             icon: const Icon(Icons.timeline),
