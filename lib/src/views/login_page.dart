@@ -271,7 +271,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     // その他のエラー（詳細を含める）
     return '【エラー】${_isSignUp ? "アカウント作成" : "ログイン"}に失敗しました。\n'
-        '詳細: ${error.length > 100 ? error.substring(0, 100) + "..." : error}';
+        '詳細: ${error.length > 100 ? "${error.substring(0, 100)}..." : error}';
   }
 }
 

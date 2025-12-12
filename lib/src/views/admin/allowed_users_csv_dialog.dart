@@ -134,7 +134,7 @@ class _AllowedUsersCsvDialogState extends ConsumerState<AllowedUsersCsvDialog> {
           .addAllowedUsersFromCsv(users);
 
       setState(() {
-        _result = '成功: ${count}件追加しました';
+        _result = '成功: $count件追加しました';
         _isLoading = false;
         _controller.clear();
       });

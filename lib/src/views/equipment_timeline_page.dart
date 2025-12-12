@@ -864,7 +864,13 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
                                     ? FontWeight.bold
                                     : FontWeight.w600,
                                 fontSize: 11,
-                                color: isMyReservation ? borderColor : null,
+                                color:
+                                    (reservationColor.computeLuminance() *
+                                                reservationColor.opacity +
+                                            (1 - reservationColor.opacity)) >
+                                        0.5
+                                    ? Colors.black
+                                    : Colors.white,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1046,7 +1052,7 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
                             return locationsAsync.when(
                               data: (locations) =>
                                   DropdownButtonFormField<Location>(
-                                    value: selectedLocation,
+                                    initialValue: selectedLocation,
                                     decoration: const InputDecoration(
                                       border: OutlineInputBorder(),
                                       contentPadding: EdgeInsets.symmetric(

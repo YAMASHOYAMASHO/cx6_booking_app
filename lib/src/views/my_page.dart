@@ -21,17 +21,19 @@ class MyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider).value;
-    final allReservationsAsync = ref.watch(reservationsProvider);
 
     if (currentUser == null) {
       return const Scaffold(body: Center(child: Text('ログインしていません')));
     }
 
+    final myReservationsAsync = ref.watch(
+      reservationsByUserProvider(currentUser.id),
+    );
+
     return Scaffold(
       appBar: AppBar(title: const Text('マイページ')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // スマホ対応：横幅に応じてパディングを調整
           final isMobile = constraints.maxWidth < 600;
           final padding = isMobile ? 8.0 : 16.0;
 
@@ -58,19 +60,12 @@ class MyPage extends ConsumerWidget {
 
                 // 自分の予約一覧
                 const Text(
-                  '自分の予約',
+                  '自分の予約 (最新50件)',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                allReservationsAsync.when(
-                  data: (allReservations) {
-                    // 自分の予約のみフィルタ
-                    final myReservations =
-                        allReservations
-                            .where((r) => r.userId == currentUser.id)
-                            .toList()
-                          ..sort((a, b) => b.startTime.compareTo(a.startTime));
-
+                myReservationsAsync.when(
+                  data: (myReservations) {
                     if (myReservations.isEmpty) {
                       return const Card(
                         child: Padding(
@@ -872,7 +867,7 @@ class _AddFavoriteEquipmentDialogState
               locationsAsync.when(
                 data: (locations) {
                   return DropdownButtonFormField<String>(
-                    value: _selectedLocationId,
+                    initialValue: _selectedLocationId,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       hintText: 'ロケーションを選択',
@@ -939,7 +934,7 @@ class _AddFavoriteEquipmentDialogState
                     }
 
                     return DropdownButtonFormField<String>(
-                      value: _selectedEquipmentId,
+                      initialValue: _selectedEquipmentId,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         hintText: '装置を選択',

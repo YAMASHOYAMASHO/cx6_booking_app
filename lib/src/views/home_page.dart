@@ -939,7 +939,13 @@ class _HorizontalTimelineGridState
                                     ? FontWeight.bold
                                     : FontWeight.w600,
                                 fontSize: 11,
-                                color: isMyReservation ? borderColor : null,
+                                color:
+                                    (reservationColor.computeLuminance() *
+                                                reservationColor.opacity +
+                                            (1 - reservationColor.opacity)) >
+                                        0.5
+                                    ? Colors.black
+                                    : Colors.white,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),

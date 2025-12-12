@@ -116,7 +116,7 @@ class _EquipmentFormDialogState extends ConsumerState<EquipmentFormDialog> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _selectedLocationId,
+                              initialValue: _selectedLocationId,
                               decoration: const InputDecoration(
                                 labelText: '場所 *',
                                 border: OutlineInputBorder(),

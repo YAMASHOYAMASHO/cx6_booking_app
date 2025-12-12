@@ -9,6 +9,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/location_viewmodel.dart';
+import 'widgets/unified_time_picker.dart';
 
 /// 予約フォーム画面
 class ReservationFormPage extends ConsumerStatefulWidget {
@@ -132,7 +133,7 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
                                 return locationsAsync.when(
                                   data: (locations) {
                                     return DropdownButtonFormField<String>(
-                                      value: _selectedEquipment.id,
+                                      initialValue: _selectedEquipment.id,
                                       decoration: const InputDecoration(
                                         labelText: '装置',
                                         border: OutlineInputBorder(),
@@ -271,30 +272,60 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
                             ),
                             const SizedBox(height: 16),
                             // 開始時刻
-                            _buildTimePicker(
-                              label: '開始時刻',
-                              time: _startTime,
-                              onChanged: (time) {
-                                setState(() {
-                                  _startTime = time;
-                                  if (_endTime.isBefore(_startTime)) {
-                                    _endTime = _startTime.add(
-                                      const Duration(hours: 1),
-                                    );
-                                  }
-                                });
-                              },
+                            Row(
+                              children: [
+                                const Text(
+                                  '開始時刻: ',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 16),
+                                UnifiedTimePicker(
+                                  initialTime: TimeOfDay.fromDateTime(
+                                    _startTime,
+                                  ),
+                                  onChanged: (time) {
+                                    setState(() {
+                                      _startTime = DateTime(
+                                        _startTime.year,
+                                        _startTime.month,
+                                        _startTime.day,
+                                        time.hour,
+                                        time.minute,
+                                      );
+                                      if (_endTime.isBefore(_startTime)) {
+                                        _endTime = _startTime.add(
+                                          const Duration(hours: 1),
+                                        );
+                                      }
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 16),
                             // 終了時刻
-                            _buildTimePicker(
-                              label: '終了時刻',
-                              time: _endTime,
-                              onChanged: (time) {
-                                setState(() {
-                                  _endTime = time;
-                                });
-                              },
+                            Row(
+                              children: [
+                                const Text(
+                                  '終了時刻: ',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 16),
+                                UnifiedTimePicker(
+                                  initialTime: TimeOfDay.fromDateTime(_endTime),
+                                  onChanged: (time) {
+                                    setState(() {
+                                      _endTime = DateTime(
+                                        _endTime.year,
+                                        _endTime.month,
+                                        _endTime.day,
+                                        time.hour,
+                                        time.minute,
+                                      );
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -434,52 +465,6 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTimePicker({
-    required String label,
-    required DateTime time,
-    required Function(DateTime) onChanged,
-  }) {
-    return Row(
-      children: [
-        Text('$label: ', style: const TextStyle(fontSize: 16)),
-        const SizedBox(width: 16),
-        DropdownButton<int>(
-          value: time.hour,
-          items: List.generate(24, (i) => i).map((hour) {
-            return DropdownMenuItem(
-              value: hour,
-              child: Text(hour.toString().padLeft(2, '0')),
-            );
-          }).toList(),
-          onChanged: (hour) {
-            if (hour != null) {
-              onChanged(
-                DateTime(time.year, time.month, time.day, hour, time.minute),
-              );
-            }
-          },
-        ),
-        const Text(' : '),
-        DropdownButton<int>(
-          value: time.minute,
-          items: List.generate(12, (i) => i * 5).map((minute) {
-            return DropdownMenuItem(
-              value: minute,
-              child: Text(minute.toString().padLeft(2, '0')),
-            );
-          }).toList(),
-          onChanged: (minute) {
-            if (minute != null) {
-              onChanged(
-                DateTime(time.year, time.month, time.day, time.hour, minute),
-              );
-            }
-          },
-        ),
-      ],
     );
   }
 

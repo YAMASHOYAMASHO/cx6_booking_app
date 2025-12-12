@@ -67,12 +67,13 @@ class ReservationRepository {
         });
   }
 
-  /// 特定のユーザーの予約を取得
+  /// 特定のユーザーの予約を取得（最新50件）
   Stream<List<Reservation>> getReservationsByUserStream(String userId) {
     return _firestore
         .collection(_collectionName)
         .where('userId', isEqualTo: userId)
         .orderBy('startTime', descending: true)
+        .limit(50) // 読み取り数削減のため制限
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
@@ -162,26 +163,33 @@ class ReservationRepository {
     await _firestore.collection(_collectionName).doc(id).delete();
   }
 
-  /// 予約の重複チェック
+  /// 予約の重複チェック（最適化版）
   Future<List<Reservation>> _checkConflicts(
     String equipmentId,
     DateTime startTime,
     DateTime endTime, {
     String? excludeId,
   }) async {
-    // 同じ装置の予約を全て取得
+    // 最適化されたクエリ:
+    // 既存予約の終了時刻が、新規予約の開始時刻より後であるものだけを取得する。
+    // これにより、既に終わっている過去の予約を全て除外できる。
+    // Note: これには複合インデックス (equipmentId ASC, endTime ASC) が必要になる場合がある。
+
     final snapshot = await _firestore
         .collection(_collectionName)
         .where('equipmentId', isEqualTo: equipmentId)
+        .where('endTime', isGreaterThan: startTime) // 終了時刻が開始時刻より未来のものだけ
         .get();
 
     print(
-      '重複チェック開始: equipmentId=$equipmentId, 開始=${startTime.toString()}, 終了=${endTime.toString()}',
+      '重複チェック開始(最適化済): equipmentId=$equipmentId, 開始=${startTime.toString()}, 終了=${endTime.toString()}',
     );
-    print('取得した予約数: ${snapshot.docs.length}');
+    print('取得した候補予約数: ${snapshot.docs.length}');
 
-    // 時間の重複をチェック
+    // メモリ内で厳密なチェック
     // 重複条件: (新規予約の開始時刻 < 既存予約の終了時刻) AND (新規予約の終了時刻 > 既存予約の開始時刻)
+    // クエリで `endTime > startTime` は保証されているので、
+    // 残りの条件 `startTime < endTime` (既存予約の開始 < 新規予約の終了) をチェックすればよい。
     final conflicts = snapshot.docs
         .map((doc) => Reservation.fromFirestore(doc.data(), doc.id))
         .where((r) {
@@ -189,9 +197,11 @@ class ReservationRepository {
           if (excludeId != null && r.id == excludeId) {
             return false;
           }
-          // 時間の重複チェック
-          final hasConflict =
-              startTime.isBefore(r.endTime) && endTime.isAfter(r.startTime);
+
+          // 既にクエリで r.endTime > startTime はフィルタされているため、
+          // ここでは r.startTime < endTime だけチェックすれば重複確定
+          final hasConflict = r.startTime.isBefore(endTime);
+
           if (hasConflict) {
             print('重複発見: ${r.id}, 開始=${r.startTime}, 終了=${r.endTime}');
           }

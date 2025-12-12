@@ -6,6 +6,7 @@ import '../models/equipment.dart';
 import '../viewmodels/favorite_reservation_template_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/location_viewmodel.dart';
+import 'widgets/unified_time_picker.dart';
 
 /// テンプレート編集ページ
 class TemplateEditPage extends ConsumerStatefulWidget {
@@ -339,27 +340,6 @@ class _SlotEditDialogState extends ConsumerState<_SlotEditDialog> {
     super.dispose();
   }
 
-  String _timeOfDayToString(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _pickTime(bool isStartTime) async {
-    final time = await showTimePicker(
-      context: context,
-      initialTime: isStartTime ? _startTime : _endTime,
-    );
-
-    if (time != null) {
-      setState(() {
-        if (isStartTime) {
-          _startTime = time;
-        } else {
-          _endTime = time;
-        }
-      });
-    }
-  }
-
   void _save() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -420,7 +400,7 @@ class _SlotEditDialogState extends ConsumerState<_SlotEditDialog> {
                 locationsAsync.when(
                   data: (locations) {
                     return DropdownButtonFormField<String>(
-                      value: _selectedLocationId,
+                      initialValue: _selectedLocationId,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         hintText: 'ロケーションを選択',
@@ -475,7 +455,7 @@ class _SlotEditDialogState extends ConsumerState<_SlotEditDialog> {
                       }
 
                       return DropdownButtonFormField<Equipment>(
-                        value: _selectedEquipment,
+                        initialValue: _selectedEquipment,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           hintText: '装置を選択',
@@ -549,15 +529,13 @@ class _SlotEditDialogState extends ConsumerState<_SlotEditDialog> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _pickTime(true),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.access_time),
-                    ),
-                    child: Text(_timeOfDayToString(_startTime)),
-                  ),
+                UnifiedTimePicker(
+                  initialTime: _startTime,
+                  onChanged: (time) {
+                    setState(() {
+                      _startTime = time;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -567,15 +545,13 @@ class _SlotEditDialogState extends ConsumerState<_SlotEditDialog> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _pickTime(false),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.access_time),
-                    ),
-                    child: Text(_timeOfDayToString(_endTime)),
-                  ),
+                UnifiedTimePicker(
+                  initialTime: _endTime,
+                  onChanged: (time) {
+                    setState(() {
+                      _endTime = time;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
 

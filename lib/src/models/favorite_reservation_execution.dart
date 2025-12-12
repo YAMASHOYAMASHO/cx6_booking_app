@@ -30,9 +30,9 @@ class FavoriteReservationExecution {
   /// サマリーテキスト
   String get summary {
     if (canExecute) {
-      return '✓ 実行可能（${reservationCount}件の予約を作成）';
+      return '✓ 実行可能（$reservationCount件の予約を作成）';
     } else {
-      return '⚠ ${conflictCount}件の競合があります';
+      return '⚠ $conflictCount件の競合があります';
     }
   }
 }

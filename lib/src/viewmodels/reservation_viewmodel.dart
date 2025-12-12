@@ -8,8 +8,8 @@ final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
   return ReservationRepository();
 });
 
-/// 全予約リストのプロバイダー（認証状態を確認）
-final reservationsProvider = StreamProvider<List<Reservation>>((ref) {
+/// 全予約リストのプロバイダー（管理者用：全件取得するため注意）
+final adminAllReservationsProvider = StreamProvider<List<Reservation>>((ref) {
   // 認証状態を確認
   final authUser = ref.watch(authStateProvider).value;
 

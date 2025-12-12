@@ -174,7 +174,7 @@ class _TimelineView extends ConsumerWidget {
     final equipmentsAsync = ref.watch(
       equipmentsByLocationProvider(selectedLocationId),
     );
-    final reservationsAsync = ref.watch(reservationsProvider);
+    final reservationsAsync = ref.watch(adminAllReservationsProvider);
 
     return equipmentsAsync.when(
       data: (equipments) {
