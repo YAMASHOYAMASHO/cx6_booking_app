@@ -1,0 +1,21 @@
+/// デバッグモード設定（テンプレート）
+///
+/// 【使用方法】
+/// 1. このファイルを debug_config.dart にコピーしてください
+/// 2. 認証情報を実際の値に変更してください
+/// 3. debug_config.dart を .gitignore に追加してください
+class DebugConfig {
+  /// デバッグモードで自動ログインを有効にするか
+  ///
+  /// true: 起動時に自動ログインを試行
+  /// false: 通常のログイン画面を表示
+  static const bool enableAutoLogin = true;
+
+  /// 自動ログイン用の管理者メールアドレス
+  /// 【編集箇所】実際のメールアドレスに変更してください
+  static const String autoLoginEmail = 'your-admin@example.com';
+
+  /// 自動ログイン用のパスワード
+  /// 【編集箇所】実際のパスワードに変更してください
+  static const String autoLoginPassword = 'your-password';
+}

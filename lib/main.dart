@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'src/config/firebase_config.dart';
+import 'src/config/debug_config.dart';
 import 'src/views/login_page.dart';
 import 'src/views/home_page.dart';
 import 'src/viewmodels/auth_viewmodel.dart';
@@ -16,6 +19,21 @@ void main() async {
 
   // 日本語ロケール初期化
   await initializeDateFormatting('ja_JP', null);
+
+  // デバッグモード時の自動ログイン
+  if (kDebugMode && DebugConfig.enableAutoLogin) {
+    debugPrint('🔧 [Debug] デバッグモード - 自動ログインを試行中...');
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: DebugConfig.autoLoginEmail,
+        password: DebugConfig.autoLoginPassword,
+      );
+      debugPrint('✅ [Debug] 自動ログイン成功: ${DebugConfig.autoLoginEmail}');
+    } catch (e) {
+      debugPrint('⚠️ [Debug] 自動ログイン失敗: $e');
+      debugPrint('   通常のログイン画面を表示します');
+    }
+  }
 
   runApp(const ProviderScope(child: MyApp()));
 }
