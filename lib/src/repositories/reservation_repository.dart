@@ -67,13 +67,18 @@ class ReservationRepository {
         });
   }
 
-  /// 特定のユーザーの予約を取得（最新50件）
+  /// 特定のユーザーの予約を取得（今日以降の予約、最新10件）
   Stream<List<Reservation>> getReservationsByUserStream(String userId) {
+    // 今日の0時0分を取得
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
     return _firestore
         .collection(_collectionName)
         .where('userId', isEqualTo: userId)
-        .orderBy('startTime', descending: true)
-        .limit(50) // 読み取り数削減のため制限
+        .where('startTime', isGreaterThanOrEqualTo: todayStart)
+        .orderBy('startTime')
+        .limit(10) // 読み取り数削減のため制限
         .snapshots()
         .map((snapshot) {
           return snapshot.docs

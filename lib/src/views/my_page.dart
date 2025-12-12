@@ -60,7 +60,7 @@ class MyPage extends ConsumerWidget {
 
                 // 自分の予約一覧
                 const Text(
-                  '自分の予約 (最新50件)',
+                  '今後の予約 (最大10件)',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
