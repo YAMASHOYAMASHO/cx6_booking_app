@@ -992,11 +992,29 @@ class _EquipmentTimelinePageState extends ConsumerState<EquipmentTimelinePage> {
                   if (canDelete)
                     TextButton(
                       onPressed: () async {
-                        await ref
-                            .read(reservationViewModelProvider.notifier)
-                            .deleteReservation(reservation.id);
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
+                        try {
+                          await ref
+                              .read(reservationViewModelProvider.notifier)
+                              .deleteReservation(
+                                reservation.id,
+                                reservation: reservation,
+                              );
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('予約を削除しました')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('削除に失敗しました: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       child: const Text(

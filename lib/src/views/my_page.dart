@@ -650,14 +650,28 @@ class _ReservationCard extends ConsumerWidget {
                       );
 
                       if (confirmed == true) {
-                        await ref
-                            .read(reservationViewModelProvider.notifier)
-                            .deleteReservation(reservation.id);
+                        try {
+                          await ref
+                              .read(reservationViewModelProvider.notifier)
+                              .deleteReservation(
+                                reservation.id,
+                                reservation: reservation,
+                              );
 
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('予約を削除しました')),
-                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('予約を削除しました')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('削除に失敗しました: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       }
                     },
