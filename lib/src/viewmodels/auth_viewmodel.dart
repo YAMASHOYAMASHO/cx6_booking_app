@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../models/user.dart';
@@ -61,34 +62,34 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   ) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      print('🔍 [SignUp] 開始: studentId=$studentId, email=$email');
+      debugPrint('🔍 [SignUp] 開始: studentId=$studentId, email=$email');
 
       // 1. 事前登録確認（エラーは AllowedUserRepository から詳細に投げられる）
-      print('📋 [SignUp] Step 1: 事前登録確認中...');
+      debugPrint('📋 [SignUp] Step 1: 事前登録確認中...');
       final allowedUser = await _allowedUserRepository.checkIfAllowed(
         studentId,
       );
-      print(
+      debugPrint(
         '✅ [SignUp] Step 1: 事前登録確認成功 - allowedUser: ${allowedUser?.studentId}',
       );
 
       // 2. Firebase Authenticationにユーザー作成
-      print('🔐 [SignUp] Step 2: Firebase Auth ユーザー作成中...');
+      debugPrint('🔐 [SignUp] Step 2: Firebase Auth ユーザー作成中...');
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      print(
+      debugPrint(
         '✅ [SignUp] Step 2: Firebase Auth ユーザー作成成功 - UID: ${credential.user?.uid}',
       );
 
       // 3. Firestoreにユーザー情報を保存
       if (credential.user != null) {
-        print('💾 [SignUp] Step 3: Firestore ユーザー情報保存中...');
-        print('   - UID: ${credential.user!.uid}');
-        print('   - Name: $name');
-        print('   - Email: $email');
-        print('   - IsAdmin: false');
+        debugPrint('💾 [SignUp] Step 3: Firestore ユーザー情報保存中...');
+        debugPrint('   - UID: ${credential.user!.uid}');
+        debugPrint('   - Name: $name');
+        debugPrint('   - Email: $email');
+        debugPrint('   - IsAdmin: false');
 
         final user = User(
           id: credential.user!.uid,
@@ -100,30 +101,30 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
 
         try {
           await _userRepository.saveUser(user);
-          print('✅ [SignUp] Step 3: Firestore ユーザー情報保存成功');
+          debugPrint('✅ [SignUp] Step 3: Firestore ユーザー情報保存成功');
         } catch (e) {
-          print('❌ [SignUp] Step 3: Firestore ユーザー情報保存失敗');
-          print('   - エラー: $e');
-          print('   - エラータイプ: ${e.runtimeType}');
+          debugPrint('❌ [SignUp] Step 3: Firestore ユーザー情報保存失敗');
+          debugPrint('   - エラー: $e');
+          debugPrint('   - エラータイプ: ${e.runtimeType}');
           rethrow;
         }
 
         // 4. allowedUsersを登録済みに更新
-        print('🏁 [SignUp] Step 4: allowedUsers 登録済みフラグ更新中...');
+        debugPrint('🏁 [SignUp] Step 4: allowedUsers 登録済みフラグ更新中...');
         try {
           await _allowedUserRepository.markAsRegistered(
             studentId,
             credential.user!.uid,
           );
-          print('✅ [SignUp] Step 4: allowedUsers 登録済みフラグ更新成功');
+          debugPrint('✅ [SignUp] Step 4: allowedUsers 登録済みフラグ更新成功');
         } catch (e) {
-          print('❌ [SignUp] Step 4: allowedUsers 登録済みフラグ更新失敗');
-          print('   - エラー: $e');
+          debugPrint('❌ [SignUp] Step 4: allowedUsers 登録済みフラグ更新失敗');
+          debugPrint('   - エラー: $e');
           rethrow;
         }
       }
 
-      print('🎉 [SignUp] 全ての処理が完了しました');
+      debugPrint('🎉 [SignUp] 全ての処理が完了しました');
     });
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/reservation.dart';
 
@@ -186,10 +187,10 @@ class ReservationRepository {
         .where('endTime', isGreaterThan: startTime) // 終了時刻が開始時刻より未来のものだけ
         .get();
 
-    print(
+    debugPrint(
       '重複チェック開始(最適化済): equipmentId=$equipmentId, 開始=${startTime.toString()}, 終了=${endTime.toString()}',
     );
-    print('取得した候補予約数: ${snapshot.docs.length}');
+    debugPrint('取得した候補予約数: ${snapshot.docs.length}');
 
     // メモリ内で厳密なチェック
     // 重複条件: (新規予約の開始時刻 < 既存予約の終了時刻) AND (新規予約の終了時刻 > 既存予約の開始時刻)
@@ -208,13 +209,13 @@ class ReservationRepository {
           final hasConflict = r.startTime.isBefore(endTime);
 
           if (hasConflict) {
-            print('重複発見: ${r.id}, 開始=${r.startTime}, 終了=${r.endTime}');
+            debugPrint('重複発見: ${r.id}, 開始=${r.startTime}, 終了=${r.endTime}');
           }
           return hasConflict;
         })
         .toList();
 
-    print('重複予約数: ${conflicts.length}');
+    debugPrint('重複予約数: ${conflicts.length}');
     return conflicts;
   }
 }

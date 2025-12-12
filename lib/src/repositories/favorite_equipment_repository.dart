@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/favorite_equipment.dart';
 
@@ -8,7 +9,7 @@ class FavoriteEquipmentRepository {
 
   /// お気に入り装置のストリーム取得
   Stream<List<FavoriteEquipment>> getFavoriteEquipmentsStream(String userId) {
-    print(
+    debugPrint(
       '🔵 [FavoriteEquipmentRepository] getFavoriteEquipmentsStream開始: userId=$userId',
     );
     return _firestore
@@ -16,7 +17,7 @@ class FavoriteEquipmentRepository {
         .where('userId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-          print(
+          debugPrint(
             '🔵 [FavoriteEquipmentRepository] スナップショット受信: ${snapshot.docs.length}件',
           );
           final favorites = snapshot.docs
@@ -24,7 +25,7 @@ class FavoriteEquipmentRepository {
               .toList();
           // クライアント側でソート
           favorites.sort((a, b) => a.order.compareTo(b.order));
-          print(
+          debugPrint(
             '🟢 [FavoriteEquipmentRepository] お気に入りリスト返却: ${favorites.length}件',
           );
           return favorites;
@@ -33,7 +34,7 @@ class FavoriteEquipmentRepository {
 
   /// お気に入り装置の一覧取得（一度だけ）
   Future<List<FavoriteEquipment>> getFavoriteEquipments(String userId) async {
-    print(
+    debugPrint(
       '🔵 [FavoriteEquipmentRepository] getFavoriteEquipments開始: userId=$userId',
     );
     final snapshot = await _firestore
@@ -41,19 +42,25 @@ class FavoriteEquipmentRepository {
         .where('userId', isEqualTo: userId)
         .get();
 
-    print('🔵 [FavoriteEquipmentRepository] 取得件数: ${snapshot.docs.length}件');
+    debugPrint(
+      '🔵 [FavoriteEquipmentRepository] 取得件数: ${snapshot.docs.length}件',
+    );
     final favorites = snapshot.docs
         .map((doc) => FavoriteEquipment.fromFirestore(doc))
         .toList();
     // クライアント側でソート
     favorites.sort((a, b) => a.order.compareTo(b.order));
-    print('🟢 [FavoriteEquipmentRepository] お気に入りリスト返却: ${favorites.length}件');
+    debugPrint(
+      '🟢 [FavoriteEquipmentRepository] お気に入りリスト返却: ${favorites.length}件',
+    );
     return favorites;
   }
 
   /// 最大order値を取得
   Future<int> getMaxOrder(String userId) async {
-    print('🔵 [FavoriteEquipmentRepository] getMaxOrder開始: userId=$userId');
+    debugPrint(
+      '🔵 [FavoriteEquipmentRepository] getMaxOrder開始: userId=$userId',
+    );
     // インデックス不要にするため、クライアント側でソート
     final snapshot = await _firestore
         .collection(_collectionName)
@@ -61,7 +68,9 @@ class FavoriteEquipmentRepository {
         .get();
 
     if (snapshot.docs.isEmpty) {
-      print('🔵 [FavoriteEquipmentRepository] getMaxOrder: お気に入りなし、order=0');
+      debugPrint(
+        '🔵 [FavoriteEquipmentRepository] getMaxOrder: お気に入りなし、order=0',
+      );
       return 0;
     }
 
@@ -73,7 +82,7 @@ class FavoriteEquipmentRepository {
     final maxOrder = favorites
         .map((f) => f.order)
         .reduce((a, b) => a > b ? a : b);
-    print(
+    debugPrint(
       '🔵 [FavoriteEquipmentRepository] getMaxOrder: maxOrder=$maxOrder (${favorites.length}件中)',
     );
     return maxOrder;
@@ -88,13 +97,13 @@ class FavoriteEquipmentRepository {
     required String locationName,
     required int order,
   }) async {
-    print('🔵 [FavoriteEquipmentRepository] addFavoriteEquipment開始');
-    print('  userId: $userId');
-    print('  equipmentId: $equipmentId');
-    print('  equipmentName: $equipmentName');
-    print('  locationId: $locationId');
-    print('  locationName: $locationName');
-    print('  order: $order');
+    debugPrint('🔵 [FavoriteEquipmentRepository] addFavoriteEquipment開始');
+    debugPrint('  userId: $userId');
+    debugPrint('  equipmentId: $equipmentId');
+    debugPrint('  equipmentName: $equipmentName');
+    debugPrint('  locationId: $locationId');
+    debugPrint('  locationName: $locationName');
+    debugPrint('  order: $order');
 
     final docRef = await _firestore.collection(_collectionName).add({
       'userId': userId,
@@ -106,7 +115,7 @@ class FavoriteEquipmentRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    print(
+    debugPrint(
       '🟢 [FavoriteEquipmentRepository] addFavoriteEquipment完了: docId=${docRef.id}',
     );
     return docRef.id;

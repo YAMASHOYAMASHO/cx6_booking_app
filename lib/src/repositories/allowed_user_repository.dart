@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/allowed_user.dart';
@@ -17,37 +18,37 @@ class AllowedUserRepository {
 
   /// 学籍番号が登録許可されているか確認
   Future<AllowedUser?> checkIfAllowed(String studentId) async {
-    print('🔍 [AllowedUserRepo] checkIfAllowed 開始: studentId=$studentId');
+    debugPrint('🔍 [AllowedUserRepo] checkIfAllowed 開始: studentId=$studentId');
     try {
       final doc = await _firestore
           .collection(_collectionName)
           .doc(studentId)
           .get();
 
-      print('📄 [AllowedUserRepo] ドキュメント取得: exists=${doc.exists}');
+      debugPrint('📄 [AllowedUserRepo] ドキュメント取得: exists=${doc.exists}');
 
       if (!doc.exists || doc.data() == null) {
-        print('❌ [AllowedUserRepo] ドキュメントが存在しません');
+        debugPrint('❌ [AllowedUserRepo] ドキュメントが存在しません');
         throw Exception('この学籍番号は登録が許可されていません。管理者にお問い合わせください。');
       }
 
       final allowedUser = AllowedUser.fromFirestore(doc.data()!, doc.id);
-      print('📋 [AllowedUserRepo] allowedUser取得成功:');
-      print('   - studentId: ${allowedUser.studentId}');
-      print('   - email: ${allowedUser.email}');
-      print('   - registered: ${allowedUser.registered}');
-      print('   - allowedAt: ${allowedUser.allowedAt}');
+      debugPrint('📋 [AllowedUserRepo] allowedUser取得成功:');
+      debugPrint('   - studentId: ${allowedUser.studentId}');
+      debugPrint('   - email: ${allowedUser.email}');
+      debugPrint('   - registered: ${allowedUser.registered}');
+      debugPrint('   - allowedAt: ${allowedUser.allowedAt}');
 
       // すでに登録済みの場合はエラー
       if (allowedUser.registered) {
-        print('❌ [AllowedUserRepo] 既に登録済みです');
+        debugPrint('❌ [AllowedUserRepo] 既に登録済みです');
         throw Exception('この学籍番号は既に登録済みです。ログインしてください。');
       }
 
-      print('✅ [AllowedUserRepo] 登録可能です');
+      debugPrint('✅ [AllowedUserRepo] 登録可能です');
       return allowedUser;
     } catch (e) {
-      print('⚠️ [AllowedUserRepo] エラー発生: $e');
+      debugPrint('⚠️ [AllowedUserRepo] エラー発生: $e');
       // 既に適切なエラーメッセージの場合はそのまま再スロー
       if (e.toString().contains('登録が許可されていません') ||
           e.toString().contains('既に登録済み')) {

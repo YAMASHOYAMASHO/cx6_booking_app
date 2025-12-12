@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
 
@@ -32,25 +33,25 @@ class UserRepository {
 
   /// ユーザーを作成または更新
   Future<void> saveUser(User user) async {
-    print('💾 [UserRepo] saveUser 開始:');
-    print('   - ID: ${user.id}');
-    print('   - Name: ${user.name}');
-    print('   - Email: ${user.email}');
-    print('   - IsAdmin: ${user.isAdmin}');
+    debugPrint('💾 [UserRepo] saveUser 開始:');
+    debugPrint('   - ID: ${user.id}');
+    debugPrint('   - Name: ${user.name}');
+    debugPrint('   - Email: ${user.email}');
+    debugPrint('   - IsAdmin: ${user.isAdmin}');
 
     try {
       await _firestore
           .collection(_collectionName)
           .doc(user.id)
           .set(user.toFirestore());
-      print('✅ [UserRepo] saveUser 成功');
+      debugPrint('✅ [UserRepo] saveUser 成功');
     } catch (e) {
-      print('❌ [UserRepo] saveUser 失敗: $e');
-      print('   - エラータイプ: ${e.runtimeType}');
+      debugPrint('❌ [UserRepo] saveUser 失敗: $e');
+      debugPrint('   - エラータイプ: ${e.runtimeType}');
       if (e.toString().contains('PERMISSION_DENIED')) {
-        print('⚠️ [UserRepo] Firestoreセキュリティルールで拒否されました');
-        print('   - コレクション: $_collectionName');
-        print('   - ドキュメントID: ${user.id}');
+        debugPrint('⚠️ [UserRepo] Firestoreセキュリティルールで拒否されました');
+        debugPrint('   - コレクション: $_collectionName');
+        debugPrint('   - ドキュメントID: ${user.id}');
       }
       rethrow;
     }

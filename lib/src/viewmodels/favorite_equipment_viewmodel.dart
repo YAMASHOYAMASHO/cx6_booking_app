@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/favorite_equipment.dart';
@@ -17,7 +18,7 @@ final favoriteEquipmentsProvider = StreamProvider<List<FavoriteEquipment>>((
   ref,
 ) {
   final user = ref.watch(currentUserProvider).value;
-  print('🔵 [favoriteEquipmentsProvider] user: ${user?.id ?? "null"}');
+  debugPrint('🔵 [favoriteEquipmentsProvider] user: ${user?.id ?? "null"}');
   if (user == null) return Stream.value([]);
 
   final stream = ref
@@ -26,9 +27,9 @@ final favoriteEquipmentsProvider = StreamProvider<List<FavoriteEquipment>>((
 
   // ストリームの内容をログ出力
   return stream.map((favorites) {
-    print('🟢 [favoriteEquipmentsProvider] お気に入り受信: ${favorites.length}件');
+    debugPrint('🟢 [favoriteEquipmentsProvider] お気に入り受信: ${favorites.length}件');
     for (var fav in favorites) {
-      print('  - ${fav.equipmentName} (order: ${fav.order})');
+      debugPrint('  - ${fav.equipmentName} (order: ${fav.order})');
     }
     return favorites;
   });
@@ -96,23 +97,23 @@ class FavoriteEquipmentViewModel extends StateNotifier<AsyncValue<void>> {
 
   /// お気に入りに追加
   Future<void> addFavorite(Equipment equipment) async {
-    print(
+    debugPrint(
       '🔵 [FavoriteEquipmentViewModel] addFavorite開始: ${equipment.name} (${equipment.id})',
     );
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      print('🔵 [FavoriteEquipmentViewModel] userId: $_userId');
+      debugPrint('🔵 [FavoriteEquipmentViewModel] userId: $_userId');
 
       // 既にお気に入りに登録されているかチェック
       final isFavorite = await _repository.isFavorite(_userId, equipment.id);
-      print('🔵 [FavoriteEquipmentViewModel] isFavorite: $isFavorite');
+      debugPrint('🔵 [FavoriteEquipmentViewModel] isFavorite: $isFavorite');
       if (isFavorite) {
         throw Exception('この装置は既にお気に入りに登録されています');
       }
 
       // location名を取得するために、Firestoreから直接取得
       final firestore = FirebaseFirestore.instance;
-      print(
+      debugPrint(
         '🔵 [FavoriteEquipmentViewModel] location取得開始: ${equipment.locationId}',
       );
       final locationDoc = await firestore
@@ -120,13 +121,13 @@ class FavoriteEquipmentViewModel extends StateNotifier<AsyncValue<void>> {
           .doc(equipment.locationId)
           .get();
       final locationName = locationDoc.data()?['name'] as String? ?? '不明な場所';
-      print('🔵 [FavoriteEquipmentViewModel] locationName: $locationName');
+      debugPrint('🔵 [FavoriteEquipmentViewModel] locationName: $locationName');
 
       // 最大order値を取得して+1
       final maxOrder = await _repository.getMaxOrder(_userId);
-      print('🔵 [FavoriteEquipmentViewModel] maxOrder: $maxOrder');
+      debugPrint('🔵 [FavoriteEquipmentViewModel] maxOrder: $maxOrder');
 
-      print('🔵 [FavoriteEquipmentViewModel] お気に入り追加開始');
+      debugPrint('🔵 [FavoriteEquipmentViewModel] お気に入り追加開始');
       await _repository.addFavoriteEquipment(
         userId: _userId,
         equipmentId: equipment.id,
@@ -135,13 +136,13 @@ class FavoriteEquipmentViewModel extends StateNotifier<AsyncValue<void>> {
         locationName: locationName,
         order: maxOrder + 1,
       );
-      print('🔵 [FavoriteEquipmentViewModel] お気に入り追加完了');
+      debugPrint('🔵 [FavoriteEquipmentViewModel] お気に入り追加完了');
     });
 
     if (state.hasError) {
-      print('🔴 [FavoriteEquipmentViewModel] エラー発生: ${state.error}');
+      debugPrint('🔴 [FavoriteEquipmentViewModel] エラー発生: ${state.error}');
     } else {
-      print('🟢 [FavoriteEquipmentViewModel] addFavorite完了');
+      debugPrint('🟢 [FavoriteEquipmentViewModel] addFavorite完了');
     }
   }
 

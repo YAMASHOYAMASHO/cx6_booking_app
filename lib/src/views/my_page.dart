@@ -11,6 +11,7 @@ import '../viewmodels/favorite_reservation_template_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../config/auth_config.dart';
 import '../viewmodels/location_viewmodel.dart';
+import '../utils/error_handler.dart';
 import 'template_edit_page.dart';
 import 'reservation_form_page.dart';
 
@@ -977,43 +978,44 @@ class _AddFavoriteEquipmentDialogState
               ? null
               : () async {
                   try {
-                    print(
-                      '🔵 [MyPage] お気に入り追加開始: selectedEquipmentId=$_selectedEquipmentId',
+                    ErrorHandler.logDebug(
+                      '[MyPage] お気に入り追加開始: selectedEquipmentId=$_selectedEquipmentId',
                     );
                     final equipments = equipmentsAsync.value;
                     if (equipments == null) {
-                      print('🔴 [MyPage] equipmentsがnull');
+                      ErrorHandler.logError('[MyPage] equipmentsがnull');
                       return;
                     }
 
                     final selectedEquipment = equipments.firstWhere(
                       (e) => e.id == _selectedEquipmentId,
                     );
-                    print(
-                      '🔵 [MyPage] 選択された装置: ${selectedEquipment.name} (${selectedEquipment.id})',
+                    ErrorHandler.logDebug(
+                      '[MyPage] 選択された装置: ${selectedEquipment.name} (${selectedEquipment.id})',
                     );
 
-                    print('🔵 [MyPage] ViewModelのaddFavorite呼び出し');
+                    ErrorHandler.logDebug('[MyPage] ViewModelのaddFavorite呼び出し');
                     await ref
                         .read(favoriteEquipmentViewModelProvider.notifier)
                         .addFavorite(selectedEquipment);
-                    print('🟢 [MyPage] ViewModelのaddFavorite完了');
+                    ErrorHandler.logDebug('[MyPage] ViewModelのaddFavorite完了');
 
                     if (context.mounted) {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('お気に入りに追加しました')),
+                      ErrorHandler.showSuccess(
+                        context,
+                        message: 'お気に入りに追加しました',
                       );
                     }
                   } catch (e) {
-                    print('🔴 [MyPage] エラー発生: $e');
+                    ErrorHandler.logError('[MyPage] エラー発生', error: e);
                     if (context.mounted) {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('エラー: $e'),
-                          backgroundColor: Colors.red,
-                        ),
+                      ErrorHandler.showError(
+                        context,
+                        message: 'お気に入り追加に失敗しました',
+                        error: e,
+                        displayType: ErrorDisplayType.snackBar,
                       );
                     }
                   }
