@@ -12,6 +12,7 @@ import '../viewmodels/equipment_viewmodel.dart';
 import '../config/auth_config.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../utils/error_handler.dart';
+import 'widgets/common/error_dialog.dart';
 import 'template_edit_page.dart';
 import 'reservation_form_page.dart';
 
@@ -90,7 +91,15 @@ class MyPage extends ConsumerWidget {
                   error: (error, stack) => Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Text('エラー: $error'),
+                      child: AsyncErrorWidget(
+                        error: error,
+                        stackTrace: stack,
+                        title: '予約の取得に失敗しました',
+                        compact: true,
+                        onRetry: () => ref.invalidate(
+                          reservationsByUserProvider(currentUser.id),
+                        ),
+                      ),
                     ),
                   ),
                 ),
