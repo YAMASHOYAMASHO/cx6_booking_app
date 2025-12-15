@@ -527,6 +527,9 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
       }
 
       if (mounted) {
+        // 予約プロバイダーをinvalidateして画面を更新
+        ref.invalidate(reservationsByDateProvider);
+
         // ローディングダイアログを閉じる
         Navigator.of(context).pop();
         // 予約フォームを閉じる
