@@ -9,6 +9,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import '../viewmodels/equipment_viewmodel.dart';
 import '../viewmodels/location_viewmodel.dart';
+import '../services/google_calendar_service.dart';
 import 'widgets/unified_time_picker.dart';
 
 /// 予約フォーム画面
@@ -534,18 +535,36 @@ class _ReservationFormPageState extends ConsumerState<ReservationFormPage> {
         Navigator.of(context).pop();
         // 予約フォームを閉じる
         Navigator.of(context).pop();
-        // 成功メッセージ
+        // 成功メッセージ（Googleカレンダー登録ボタン付き）
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text(widget.reservation == null ? '予約を作成しました' : '予約を更新しました'),
+                Expanded(
+                  child: Text(
+                    widget.reservation == null ? '予約を作成しました' : '予約を更新しました',
+                  ),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 10),
+            action: SnackBarAction(
+              label: 'Googleカレンダーに登録',
+              textColor: Colors.white,
+              onPressed: () {
+                GoogleCalendarService.addSingleReservation(
+                  equipmentName: _selectedEquipment.name,
+                  startTime: _startTime,
+                  endTime: _endTime,
+                  note: _noteController.text.trim().isEmpty
+                      ? null
+                      : _noteController.text.trim(),
+                );
+              },
+            ),
           ),
         );
       }

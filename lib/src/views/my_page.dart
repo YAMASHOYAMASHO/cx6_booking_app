@@ -12,6 +12,7 @@ import '../viewmodels/equipment_viewmodel.dart';
 import '../config/auth_config.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../utils/error_handler.dart';
+import '../services/google_calendar_service.dart';
 import 'widgets/common/error_dialog.dart';
 import 'template_edit_page.dart';
 import 'reservation_form_page.dart';
@@ -1325,9 +1326,63 @@ class _TemplateExecuteDialogState
         Navigator.of(context).pop();
 
         if (result.success) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(result.message)));
+          // テンプレート情報から Googleカレンダー用のデータを構築
+          final template = widget.template;
+          final slots = template.slots;
+
+          // 装置名一覧
+          final equipmentNames = slots
+              .map((slot) => slot.equipmentName)
+              .toList();
+
+          // 備考一覧
+          final notes = slots.map((slot) => slot.note).toList();
+
+          // 最も早い開始時刻と最も遅い終了時刻を計算
+          DateTime? earliestStart;
+          DateTime? latestEnd;
+
+          for (final slot in slots) {
+            final startDateTime = slot.getStartDateTime(_baseDate);
+            final endDateTime = slot.getEndDateTime(_baseDate);
+
+            if (earliestStart == null ||
+                startDateTime.isBefore(earliestStart)) {
+              earliestStart = startDateTime;
+            }
+            if (latestEnd == null || endDateTime.isAfter(latestEnd)) {
+              latestEnd = endDateTime;
+            }
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(result.message)),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 10),
+              action: earliestStart != null && latestEnd != null
+                  ? SnackBarAction(
+                      label: 'Googleカレンダーに登録',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        GoogleCalendarService.addTemplateReservation(
+                          templateName: template.name,
+                          equipmentNames: equipmentNames,
+                          earliestStartTime: earliestStart!,
+                          latestEndTime: latestEnd!,
+                          notes: notes,
+                        );
+                      },
+                    )
+                  : null,
+            ),
+          );
         } else {
           showDialog(
             context: context,
