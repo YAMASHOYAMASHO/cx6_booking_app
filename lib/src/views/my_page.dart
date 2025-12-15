@@ -4,6 +4,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:intl/intl.dart';
 import '../models/reservation.dart';
 import '../models/favorite_equipment.dart';
+import '../models/favorite_reservation_template.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/reservation_viewmodel.dart';
 import '../viewmodels/favorite_equipment_viewmodel.dart';
@@ -1259,7 +1260,7 @@ class _FavoriteTemplatesSection extends ConsumerWidget {
 
 /// テンプレート実行ダイアログ
 class _TemplateExecuteDialog extends ConsumerStatefulWidget {
-  final dynamic template;
+  final FavoriteReservationTemplate template;
 
   const _TemplateExecuteDialog({required this.template});
 
