@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ユーザー認証のヘルパー関数
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // 自分自身のユーザーデータかチェック
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // 管理者かチェック
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // ユーザーコレクション
+    match /users/{userId} {
+      // 読み取り: 認証済みユーザーなら誰でも可能
+      allow read: if isAuthenticated();
+      
+      // 作成: 新規サインアップ時に自分のドキュメントを作成可能
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // 更新: 自分のドキュメントのみ更新可能
+      allow update: if isAuthenticated() && isOwner(userId);
+      
+      // 削除: 管理者のみ可能
+      allow delete: if isAdmin();
+    }
+    
+    // 場所コレクション
+    match /locations/{locationId} {
+      // 読み取り: 認証済みユーザーなら誰でも可能
+      allow read: if isAuthenticated();
+      
+      // 作成・更新・削除: 管理者のみ可能
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // 装置コレクション
+    match /equipments/{equipmentId} {
+      // 読み取り: 認証済みユーザーなら誰でも可能
+      allow read: if isAuthenticated();
+      
+      // 作成・更新・削除: 管理者のみ可能
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // 予約コレクション
+    match /reservations/{reservationId} {
+      // 読み取り: 認証済みユーザーなら誰でも可能
+      allow read: if isAuthenticated();
+      
+      // 作成: 認証済みユーザーで、自分のuserIdの予約のみ作成可能
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // 更新: 自分の予約または管理者のみ更新可能
+      allow update: if isAuthenticated() && 
+                       (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // 削除: 自分の予約または管理者のみ削除可能
+      allow delete: if isAuthenticated() && 
+                       (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    
+    // お気に入り装置コレクション
+    match /favoriteEquipments/{favoriteId} {
+      // 読み取り: 認証済みユーザーなら自分のお気に入りを読み取り可能
+      allow read: if isAuthenticated();
+      
+      // 作成: 認証済みユーザーで、自分のuserIdのお気に入りのみ作成可能
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // 更新: 自分のお気に入りのみ更新可能
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      
+      // 削除: 自分のお気に入りのみ削除可能
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // お気に入り予約テンプレートコレクション
+    match /favoriteReservationTemplates/{templateId} {
+      // 読み取り: 認証済みユーザーなら自分のテンプレートを読み取り可能
+      allow read: if isAuthenticated();
+      
+      // 作成: 認証済みユーザーで、自分のuserIdのテンプレートのみ作成可能
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // 更新: 自分のテンプレートのみ更新可能
+      allow update: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+      
+      // 削除: 自分のテンプレートのみ削除可能
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+  }
+}

@@ -1,28 +1,35 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-*.code-workspace
+# ==============================================================================
+# Flutter / Dart 汎用
+# ==============================================================================
 
-# IntelliJ related
+# Dartツール関連
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+
+# Flutterプラグイン依存（自動生成）
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# ドキュメント生成
+**/doc/api/
+
+# ビルド成果物
+/build/
+/coverage/
+
+# ==============================================================================
+# IDE / エディタ設定
+# ==============================================================================
+
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-# プロジェクト共有の推奨設定は残し、個人設定のみ除外
+# VS Code（プロジェクト共有設定は残す）
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -30,50 +37,210 @@ migrate_working_dir/
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# その他のIDE/エディタ
+*.swp
+*.swo
+*~
+.atom/
+.history
+*.code-workspace
 
-# Firebase - 機密情報の除外（プロジェクトによる）
-# 注意: firebase_config.dartは公開APIキーのみなので通常はコミットOK
-# しかし、サービスアカウントキーなどは絶対に除外すること
-**/google-services.json.secret
-**/GoogleService-Info.plist.secret
-**/*-firebase-adminsdk-*.json
+# ==============================================================================
+# OS固有のファイル
+# ==============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ==============================================================================
+# Android プラットフォーム
+# ==============================================================================
+
+# Gradle
+/android/.gradle/
+/android/captures/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+/android/**/gradle-wrapper.jar
+
+# ビルド成果物
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+/android/.cxx/
+
+# 自動生成プラグイン登録
+/android/**/GeneratedPluginRegistrant.java
+
+# キーストア（機密情報）
+/android/key.properties
+/android/**/*.keystore
+/android/**/*.jks
+
+# ==============================================================================
+# iOS プラットフォーム
+# ==============================================================================
+
+# Xcode関連
+**/ios/dgph
+**/ios/*.mode1v3
+**/ios/*.mode2v3
+**/ios/*.moved-aside
+**/ios/*.pbxuser
+**/ios/*.perspectivev3
+**/ios/**/*sync/
+**/ios/.sconsign.dblite
+**/ios/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/profile
+**/ios/**/xcuserdata/
+**/ios/**/.generated/
+
+# Flutter生成ファイル
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ==============================================================================
+# macOS プラットフォーム
+# ==============================================================================
+
+# Flutter生成ファイル
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Xcode関連
+**/macos/dgph
+**/macos/**/xcuserdata/
+**/macos/**/Pods/
+
+# ==============================================================================
+# Linux プラットフォーム
+# ==============================================================================
+
+# Flutter生成ファイル
+/linux/flutter/ephemeral/
+/linux/flutter/generated_plugin_registrant.cc
+/linux/flutter/generated_plugin_registrant.h
+/linux/flutter/generated_plugins.cmake
+
+# ==============================================================================
+# Windows プラットフォーム
+# ==============================================================================
+
+# Flutter生成ファイル
+/windows/flutter/ephemeral/
+/windows/flutter/generated_plugin_registrant.cc
+/windows/flutter/generated_plugin_registrant.h
+/windows/flutter/generated_plugins.cmake
+
+# Visual Studio関連
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+/windows/x64/
+/windows/x86/
+*.[Cc]ache
+!*.[Cc]ache/
+
+# ==============================================================================
+# Firebase
+# ==============================================================================
+
+# Firebase CLI関連
 .firebase/
 firebase-debug.log
 firestore-debug.log
-firestore.indexes.json
-firestore.rules
-storage.rules
+ui-debug.log
+pubsub-debug.log
 
-# Symbolication related
+# 機密情報（絶対にコミットしない）
+**/google-services.json.secret
+**/GoogleService-Info.plist.secret
+**/*-firebase-adminsdk-*.json
+**/*serviceAccountKey*.json
+
+# 注意: firebase_config.dart は公開APIキーのみなので通常はコミットOK
+# ただし個別の判断が必要な場合はここに追加
+
+# ==============================================================================
+# シンボル化 / 難読化
+# ==============================================================================
+
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
+# ==============================================================================
 # 環境変数・機密情報
+# ==============================================================================
+
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
 *.key
 *.pem
 secrets/
+
+# ==============================================================================
+# プロジェクト固有の除外設定
+# ==============================================================================
+
+# エージェント設定
 .agent/
 
 # 環境固有の設定ファイル（*.example をテンプレートとして使用）
 lib/src/config/auth_config.dart
 lib/src/config/debug_config.dart
 
+# 一時ファイル・ログ
+*.log
+flutter_*.log
+analyze_result.txt
+
+# ==============================================================================
+# その他
+# ==============================================================================
+
+# ビルドログ・一時ファイル
+.build/
+.buildlog/
+
+# バージョン管理システム
+.svn/
+migrate_working_dir/
+
+# Swift Package Manager
+.swiftpm/
+
+# クラスファイル・バイトコード
+*.class
+*.pyc
