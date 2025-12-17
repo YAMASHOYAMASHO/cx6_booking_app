@@ -1,0 +1,27 @@
+﻿Analyzing cx6_booking_app...                                    
+
+warning - The declaration '_equipmentDateKey' isn't referenced - lib\src\services\reservation_cache_service.dart:48:10 - unused_element
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\src\views\equipment_timeline_page.dart:1151:41 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\src\views\equipment_timeline_page.dart:1154:41 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\src\views\my_page.dart:365:52 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\src\views\my_page.dart:526:52 - use_build_context_synchronously
+
+flutter : 5 issues fo
+und. (ran in 6.9s)
+発生場所 行:1 文字:1
++ flutter analyze --n
+o-pub 2>&1 | Out-File
+ -FilePath analyze_ou
+tput2.tx ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (5 issue   
+ s found. (ran in    
+ 6.9s):String) [    ]
+, RemoteExcepti    on
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 

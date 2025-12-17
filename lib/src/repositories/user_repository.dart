@@ -119,4 +119,16 @@ class UserRepository {
 
     return users;
   }
+
+  /// ユーザーを削除
+  Future<void> deleteUser(String userId) async {
+    debugPrint('🗑️ [UserRepo] deleteUser 開始: userId=$userId');
+    try {
+      await _firestore.collection(_collectionName).doc(userId).delete();
+      debugPrint('✅ [UserRepo] deleteUser 成功');
+    } catch (e) {
+      debugPrint('❌ [UserRepo] deleteUser 失敗: $e');
+      rethrow;
+    }
+  }
 }

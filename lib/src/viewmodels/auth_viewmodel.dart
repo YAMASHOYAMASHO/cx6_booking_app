@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../models/user.dart';
 import '../repositories/user_repository.dart';
 import '../repositories/allowed_user_repository.dart';
+import '../repositories/reservation_repository.dart';
+import '../repositories/favorite_equipment_repository.dart';
+import '../repositories/favorite_reservation_template_repository.dart';
 
 /// FirebaseAuthのプロバイダー
 final firebaseAuthProvider = Provider<auth.FirebaseAuth>((ref) {
@@ -20,6 +23,16 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository();
 });
 
+// NOTE: ReservationRepositoryProvider, FavoriteEquipmentRepositoryProvider は
+// それぞれ reservation_viewmodel.dart, favorite_equipment_viewmodel.dart で定義済み
+// AuthViewModelでは直接リポジトリをインスタンス化して使用
+
+/// FavoriteReservationTemplateRepositoryのプロバイダー
+final favoriteTemplateRepositoryProvider =
+    Provider<FavoriteReservationTemplateRepository>((ref) {
+      return FavoriteReservationTemplateRepository();
+    });
+
 /// 現在のユーザー情報のプロバイダー
 final currentUserProvider = StreamProvider<User?>((ref) {
   final authUser = ref.watch(authStateProvider).value;
@@ -35,14 +48,28 @@ final userByIdProvider = StreamProvider.family<User?, String>((ref, userId) {
   return ref.watch(userRepositoryProvider).getUserStream(userId);
 });
 
+/// 全ユーザー情報のプロバイダー（管理者用）
+final allUsersProvider = StreamProvider<List<User>>((ref) {
+  return ref.watch(userRepositoryProvider).getAllUsersStream();
+});
+
 /// 認証ViewModel
 class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   final auth.FirebaseAuth _auth;
   final UserRepository _userRepository;
   final AllowedUserRepository _allowedUserRepository;
+  final ReservationRepository _reservationRepository;
+  final FavoriteEquipmentRepository _favoriteEquipmentRepository;
+  final FavoriteReservationTemplateRepository _favoriteTemplateRepository;
 
-  AuthViewModel(this._auth, this._userRepository, this._allowedUserRepository)
-    : super(const AsyncValue.data(null));
+  AuthViewModel(
+    this._auth,
+    this._userRepository,
+    this._allowedUserRepository,
+    this._reservationRepository,
+    this._favoriteEquipmentRepository,
+    this._favoriteTemplateRepository,
+  ) : super(const AsyncValue.data(null));
 
   /// メールとパスワードでサインイン
   Future<void> signInWithEmail(String email, String password) async {
@@ -167,6 +194,66 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       await _auth.sendPasswordResetEmail(email: email);
     });
   }
+
+  /// アカウントを削除（自分自身のアカウント）
+  /// Firebase Auth + Firestore の全データを削除
+  Future<void> deleteAccount() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('ログインしていません');
+      }
+
+      final userId = user.uid;
+      debugPrint('🗑️ [DeleteAccount] アカウント削除開始: userId=$userId');
+
+      // 1. 関連データを削除
+      debugPrint('🗑️ [DeleteAccount] Step 1: 予約データ削除中...');
+      await _reservationRepository.deleteAllReservationsByUser(userId);
+
+      debugPrint('🗑️ [DeleteAccount] Step 2: お気に入り装置削除中...');
+      await _favoriteEquipmentRepository.deleteAllByUser(userId);
+
+      debugPrint('🗑️ [DeleteAccount] Step 3: お気に入りテンプレート削除中...');
+      await _favoriteTemplateRepository.deleteAllByUser(userId);
+
+      // 2. ユーザードキュメントを削除
+      debugPrint('🗑️ [DeleteAccount] Step 4: ユーザードキュメント削除中...');
+      await _userRepository.deleteUser(userId);
+
+      // 3. Firebase Auth ユーザーを削除
+      debugPrint('🗑️ [DeleteAccount] Step 5: Firebase Auth ユーザー削除中...');
+      await user.delete();
+
+      debugPrint('✅ [DeleteAccount] アカウント削除完了');
+    });
+  }
+
+  /// ユーザーを削除（管理者用）- Firestoreデータのみ
+  /// Firebase Authのユーザーは削除されない（Admin SDKが必要なため）
+  Future<void> deleteUserAsAdmin(String userId) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      debugPrint('🗑️ [DeleteUserAsAdmin] ユーザー削除開始: userId=$userId');
+
+      // 1. 関連データを削除
+      debugPrint('🗑️ [DeleteUserAsAdmin] Step 1: 予約データ削除中...');
+      await _reservationRepository.deleteAllReservationsByUser(userId);
+
+      debugPrint('🗑️ [DeleteUserAsAdmin] Step 2: お気に入り装置削除中...');
+      await _favoriteEquipmentRepository.deleteAllByUser(userId);
+
+      debugPrint('🗑️ [DeleteUserAsAdmin] Step 3: お気に入りテンプレート削除中...');
+      await _favoriteTemplateRepository.deleteAllByUser(userId);
+
+      // 2. ユーザードキュメントを削除
+      debugPrint('🗑️ [DeleteUserAsAdmin] Step 4: ユーザードキュメント削除中...');
+      await _userRepository.deleteUser(userId);
+
+      debugPrint('✅ [DeleteUserAsAdmin] ユーザー削除完了');
+    });
+  }
 }
 
 /// AuthViewModelのプロバイダー
@@ -176,5 +263,8 @@ final authViewModelProvider =
         ref.watch(firebaseAuthProvider),
         ref.watch(userRepositoryProvider),
         ref.watch(allowedUserRepositoryProvider),
+        ReservationRepository(),
+        FavoriteEquipmentRepository(),
+        ref.watch(favoriteTemplateRepositoryProvider),
       );
     });

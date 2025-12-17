@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/favorite_reservation_template.dart';
 import '../models/favorite_reservation_execution.dart';
 import '../models/reservation_slot.dart';
@@ -199,5 +200,30 @@ class FavoriteReservationTemplateRepository {
     }
 
     await batch.commit();
+  }
+
+  /// ユーザーの全テンプレートを削除（アカウント削除時に使用）
+  Future<void> deleteAllByUser(String userId) async {
+    debugPrint('🗑️ [FavoriteTemplateRepo] deleteAllByUser 開始: userId=$userId');
+
+    final snapshot = await _firestore
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    debugPrint('🗑️ [FavoriteTemplateRepo] 削除対象数: ${snapshot.docs.length}');
+
+    if (snapshot.docs.isEmpty) {
+      debugPrint('✅ [FavoriteTemplateRepo] 削除対象のテンプレートなし');
+      return;
+    }
+
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+
+    debugPrint('✅ [FavoriteTemplateRepo] deleteAllByUser 成功');
   }
 }

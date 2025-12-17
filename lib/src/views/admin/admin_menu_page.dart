@@ -4,6 +4,7 @@ import '../../viewmodels/auth_viewmodel.dart';
 import 'equipment_management_page.dart';
 import 'reservation_management_page.dart';
 import 'allowed_users_page.dart';
+import 'user_management_page.dart';
 
 /// 管理者メニュー画面
 class AdminMenuPage extends ConsumerWidget {
@@ -84,9 +85,11 @@ class AdminMenuPage extends ConsumerWidget {
                   icon: Icons.people,
                   color: Colors.orange,
                   onTap: () {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('今後実装予定')));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const UserManagementPage(),
+                      ),
+                    );
                   },
                 ),
                 _MenuCard(

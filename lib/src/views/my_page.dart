@@ -54,6 +54,10 @@ class MyPage extends ConsumerWidget {
                 const _PasswordCard(),
                 const SizedBox(height: 16),
 
+                // アカウント削除カード
+                const _DeleteAccountCard(),
+                const SizedBox(height: 16),
+
                 // お気に入り装置セクション
                 const _FavoriteEquipmentsSection(),
                 const SizedBox(height: 16),
@@ -539,6 +543,220 @@ class _PasswordCardState extends ConsumerState<_PasswordCard> {
         ),
       ),
     );
+  }
+}
+
+/// アカウント削除カード
+class _DeleteAccountCard extends ConsumerWidget {
+  const _DeleteAccountCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.warning_amber, color: Colors.red),
+                SizedBox(width: 8),
+                Text(
+                  'アカウント削除',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'アカウントを削除すると、すべての予約、お気に入り装置、テンプレートが削除されます。この操作は元に戻せません。',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _showFirstConfirmation(context, ref),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.delete_forever),
+                label: const Text('アカウントを削除'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFirstConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.red),
+            SizedBox(width: 8),
+            Text('アカウント削除の確認'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('本当にアカウントを削除しますか？'),
+            SizedBox(height: 16),
+            Text(
+              '以下のデータがすべて削除されます：',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• すべての予約'),
+            Text('• お気に入り装置'),
+            Text('• お気に入りテンプレート'),
+            Text('• アカウント情報'),
+            SizedBox(height: 16),
+            Text(
+              'この操作は取り消せません。',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSecondConfirmation(context, ref);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('削除を続行'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSecondConfirmation(BuildContext context, WidgetRef ref) {
+    final confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.dangerous, color: Colors.red),
+                SizedBox(width: 8),
+                Text('最終確認'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '最終確認：「削除」と入力してください',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: confirmController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: '「削除」と入力',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  confirmController.dispose();
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('キャンセル'),
+              ),
+              ElevatedButton(
+                onPressed: confirmController.text == '削除'
+                    ? () async {
+                        Navigator.pop(dialogContext);
+                        await _deleteAccount(context, ref);
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('アカウントを削除'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref) async {
+    // ローディングダイアログを表示
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('アカウントを削除中...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await ref.read(authViewModelProvider.notifier).deleteAccount();
+
+      if (context.mounted) {
+        // ローディングダイアログを閉じる
+        Navigator.pop(context);
+
+        // 成功メッセージを表示
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('アカウントを削除しました'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        // ローディングダイアログを閉じる
+        Navigator.pop(context);
+
+        // エラーメッセージを表示
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('アカウントの削除に失敗しました: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

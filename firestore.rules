@@ -83,9 +83,9 @@ service cloud.firestore {
       allow update: if isAuthenticated() && 
                        resource.data.userId == request.auth.uid;
       
-      // 削除: 自分のお気に入りのみ削除可能
+      // 削除: 自分のお気に入りまたは管理者のみ削除可能
       allow delete: if isAuthenticated() && 
-                       resource.data.userId == request.auth.uid;
+                       (resource.data.userId == request.auth.uid || isAdmin());
     }
     
     // お気に入り予約テンプレートコレクション
@@ -101,9 +101,9 @@ service cloud.firestore {
       allow update: if isAuthenticated() && 
                        resource.data.userId == request.auth.uid;
       
-      // 削除: 自分のテンプレートのみ削除可能
+      // 削除: 自分のテンプレートまたは管理者のみ削除可能
       allow delete: if isAuthenticated() && 
-                       resource.data.userId == request.auth.uid;
+                       (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }

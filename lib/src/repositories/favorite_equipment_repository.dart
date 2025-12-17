@@ -205,4 +205,31 @@ class FavoriteEquipmentRepository {
 
     await batch.commit();
   }
+
+  /// ユーザーの全お気に入り装置を削除（アカウント削除時に使用）
+  Future<void> deleteAllByUser(String userId) async {
+    debugPrint(
+      '🗑️ [FavoriteEquipmentRepo] deleteAllByUser 開始: userId=$userId',
+    );
+
+    final snapshot = await _firestore
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    debugPrint('🗑️ [FavoriteEquipmentRepo] 削除対象数: ${snapshot.docs.length}');
+
+    if (snapshot.docs.isEmpty) {
+      debugPrint('✅ [FavoriteEquipmentRepo] 削除対象のお気に入り装置なし');
+      return;
+    }
+
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+
+    debugPrint('✅ [FavoriteEquipmentRepo] deleteAllByUser 成功');
+  }
 }

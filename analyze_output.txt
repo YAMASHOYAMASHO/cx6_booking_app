@@ -1,0 +1,35 @@
+﻿
+┌─────────────────────────────────────────────────────────┐
+│ A new version of Flutter is available!                  │
+│                                                         │
+│ To update to the latest version, run "flutter upgrade". │
+└─────────────────────────────────────────────────────────┘
+Analyzing cx6_booking_app...                                    
+
+warning - The declaration '_equipmentDateKey' isn't referenced - lib\src\services\reservation_cache_service.dart:48:10 - unused_element
+warning - The operand can't be 'null', so the condition is always 'true' - lib\src\views\admin\user_management_page.dart:86:42 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\src\views\admin\user_management_page.dart:88:81 - unnecessary_non_null_assertion
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\src\views\equipment_timeline_page.dart:1151:41 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\src\views\equipment_timeline_page.dart:1154:41 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\src\views\my_page.dart:365:52 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\src\views\my_page.dart:526:52 - use_build_context_synchronously
+
+flutter : 7 issues fo
+und. (ran in 5.1s)
+発生場所 行:1 文字:1
++ flutter analyze --n
+o-pub 2>&1 | Out-File
+ -FilePath analyze_ou
+tput.txt ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (7 issue   
+ s found. (ran in    
+ 5.1s):String) [    ]
+, RemoteExcepti    on
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 

@@ -218,4 +218,31 @@ class ReservationRepository {
     debugPrint('重複予約数: ${conflicts.length}');
     return conflicts;
   }
+
+  /// ユーザーの全予約を削除（アカウント削除時に使用）
+  Future<void> deleteAllReservationsByUser(String userId) async {
+    debugPrint(
+      '🗑️ [ReservationRepo] deleteAllReservationsByUser 開始: userId=$userId',
+    );
+
+    final snapshot = await _firestore
+        .collection(_collectionName)
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    debugPrint('🗑️ [ReservationRepo] 削除対象予約数: ${snapshot.docs.length}');
+
+    if (snapshot.docs.isEmpty) {
+      debugPrint('✅ [ReservationRepo] 削除対象の予約なし');
+      return;
+    }
+
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+
+    debugPrint('✅ [ReservationRepo] deleteAllReservationsByUser 成功');
+  }
 }
